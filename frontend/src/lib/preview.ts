@@ -72,6 +72,28 @@ const MATCHES: T.TrialMatch[] = [
     missing_information: [], needs_coordinator_confirmation: [], plain_language_summary: null, disclaimer: DISCLAIMER },
 ];
 
+// Preview sample, not written by Gemini: fixed text that shows each criterion effect on the explanation screen.
+function explanation(m: T.TrialMatch): T.TrialExplanation {
+  const c = (kind: T.CriterionAssessment["kind"], original_text: string, plain_text: string, applies_to_patient: T.CriterionAssessment["applies_to_patient"],
+    effect: T.CriterionEffect, evidence: string | null = null): T.CriterionAssessment =>
+    ({ kind, original_text, plain_text, applies_to_patient, evidence, question_for_coordinator: null, effect, quote_verified: true });
+  const mismatch = m.status === "KNOWN_CRITERIA_MISMATCH";
+  return {
+    nct_id: m.trial.nct_id, title: m.trial.title, url: m.trial.url, status: m.status,
+    plain_summary: "Preview sample: this made-up trial tests whether a once-daily inhaler controls asthma as well as a twice-daily one. You would visit the clinic about once a month for six months.",
+    criteria: [
+      c("inclusion", "Adults aged 18 to 65", mismatch ? "You need to be 50 or older." : "You need to be between 18 and 65.", mismatch ? "NO" : "YES", mismatch ? "conflicts" : "supports", "Age: 28"),
+      c("inclusion", "Diagnosed with asthma for at least 6 months", "You need to have had asthma for at least 6 months.", "UNKNOWN", "unknown"),
+      c("inclusion", "Using an inhaled steroid", "You need to be using a preventer (steroid) inhaler.", "YES", "supports", "Medication: Beclometasone 100 mcg"),
+      c("exclusion", "Current smokers", "People who smoke now can't take part.", "NO", "supports", "Smoking: never"),
+      c("exclusion", "Pregnant or breastfeeding", "People who are pregnant or breastfeeding can't take part.", "NO", "supports", "Pregnant or breastfeeding: no"),
+    ],
+    questions_to_ask: ["Can I keep using my current preventer inhaler during the trial?", "How often would I need to visit the clinic?"],
+    missing_profile_fields: ["When you were diagnosed with asthma"],
+    why_surfaced: m.why_surfaced, disclaimer: DISCLAIMER,
+  };
+}
+
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 const strip = ({ ...d }: DB["doses"][number]): T.Dose => d;
 
@@ -137,6 +159,14 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
   if (route === "/trials/search") {
     const q = new URLSearchParams(query).get("q")?.toLowerCase() ?? "";
     return MATCHES.map((m) => m.trial).filter((t) => t.title.toLowerCase().includes(q) || t.conditions.some((c) => c.toLowerCase().includes(q)));
+  }
+  const explain = route.match(/^\/trials\/(.+)\/explain$/);
+  if (explain) {
+    const m = MATCHES.find((x) => x.trial.nct_id === decodeURIComponent(explain[1]));
+    if (!m) throw new PreviewError("not_found", "Trial not found in preview data.", 404);
+    // Sample 2 shows the fallback view, as when Gemini is not configured.
+    if (m.trial.nct_id === "NCT-SAMPLE-2") throw new PreviewError("gemini_unavailable", "Preview sample: explanation unavailable.", 503);
+    return explanation(m);
   }
   if (route.startsWith("/trials/")) {
     const t = MATCHES.find((m) => m.trial.nct_id === decodeURIComponent(route.slice(8)))?.trial;
