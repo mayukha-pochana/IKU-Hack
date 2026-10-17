@@ -38,7 +38,10 @@ async def matches(user: User = Depends(get_current_user), db: Session = Depends(
         return []
     trials = []
     for cond in profile.conditions:
-        trials += await ct.search_trials(cond, 10)
+        found = cache.search_cached(db, cond, 25)   # fast: local cache
+        if not found:                               # cache empty -> live API
+            found = await ct.search_trials(cond, 10)
+        trials += found
     seen, out = set(), []
     for t in trials:
         if t.nct_id not in seen:
