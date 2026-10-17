@@ -1,21 +1,62 @@
-// OWNER: Member 2
+// OWNER: Member 2 - one trial in a list (design system: TrialCard). Never claims eligibility.
 import Link from "next/link";
-import type { TrialMatch } from "@/types";
+import { CircleDot, CircleOff, MapPin } from "lucide-react";
+import type { Trial, TrialMatch } from "@/types";
+import { MatchBadge } from "@/components/ui/pz";
+import { ReadAloud } from "@/components/ui/ReadAloud";
 
-const LABEL = {
-  POTENTIAL_MATCH: "Potential match",
-  MORE_INFORMATION_NEEDED: "More information needed",
-  KNOWN_CRITERIA_MISMATCH: "Known criteria mismatch",
-} as const;
+/** ClinicalTrials.gov phase codes in plain English: EARLY_PHASE1, PHASE1..PHASE4, NA. */
+export function phaseLabel(p: string) {
+  const code = p.toUpperCase();
+  if (code === "NA") return "No phase";
+  const m = code.match(/^(EARLY_)?PHASE\s*(\d)$/);
+  return m ? `${m[1] ? "Early phase" : "Phase"} ${m[2]}` : p;
+}
+const statusLabel = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 
-export function TrialMatchCard({ match }: { match: TrialMatch }) {
+/** Recruiting = green; any other ClinicalTrials.gov status (not yet recruiting, completed, ...) = red. */
+export function TrialStatusBadge({ status }: { status: string | null }) {
+  if (!status) return null;
+  return status === "RECRUITING"
+    ? <span className="pz-badge pz-badge--success"><CircleDot aria-hidden="true" />Recruiting</span>
+    : <span className="pz-badge pz-badge--danger"><CircleOff aria-hidden="true" />{statusLabel(status)}</span>;
+}
+
+const age = (a: string | null) => a?.replace(/\s*Years?$/i, "").replace(/\s*Months?$/i, " months").trim() ?? null;
+export function ageRange(min: string | null, max: string | null) {
+  const lo = age(min), hi = age(max);
+  if (lo && hi) return `${lo} to ${hi}${/months/.test(hi) ? "" : " years"}`;
+  if (lo) return `${lo}${/months/.test(lo) ? "" : " years"} and over`;
+  if (hi) return `Up to ${hi}${/months/.test(hi) ? "" : " years"}`;
+  return "Not listed";
+}
+
+export function trialPlace(t: Trial) {
+  const l = t.locations.find((x) => x.country === "United Kingdom") ?? t.locations[0];
+  if (!l) return null;
+  const more = t.locations.length > 1 ? ` and ${t.locations.length - 1} more` : "";
+  return [l.facility, l.city].filter(Boolean).join(", ") + more;
+}
+
+export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; trial?: Trial }) {
+  const t = match?.trial ?? bare!;
+  const place = trialPlace(t);
   return (
-    <article className="rounded-lg border p-4">
-      <p className="text-sm font-medium text-brand-700">{LABEL[match.status]}</p>
-      <h3 className="text-lg font-semibold">{match.trial.title}</h3>
-      <ul className="list-disc pl-5 text-sm">{match.why_surfaced.map((w) => <li key={w}>{w}</li>)}</ul>
-      <Link href={`/trials/${match.trial.nct_id}`} className="mt-2 inline-block underline">View details</Link>
-      <p className="mt-2 text-xs text-slate-600">{match.disclaimer}</p>
+    <article className="pz-card">
+      <div className="pz-card__row">
+        {match ? <MatchBadge status={match.status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
+        {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
+        <TrialStatusBadge status={t.status} />
+      </div>
+      <h3 className="pz-card__title">{t.title}</h3>
+      {place && <p className="pz-card__meta inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</p>}
+      {match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
+      {!match && t.brief_summary && <p className="pz-card__body line-clamp-3 text-ink-muted">{t.brief_summary}</p>}
+      <div className="pz-card__actions">
+        <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</Link>
+        <ReadAloud small request={{ kind: "trial", nct_id: t.nct_id }} label={`Read ${t.nct_id} summary aloud`} />
+      </div>
+      {match && <p className="text-caption text-ink-muted">{match.disclaimer}</p>}
     </article>
   );
 }

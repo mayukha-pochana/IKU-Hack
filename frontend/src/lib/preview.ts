@@ -1,0 +1,160 @@
+// LOCAL UI PREVIEW ONLY. Lets the team click through the signed-in screens without the backend.
+// - Only available when NODE_ENV === "development" (never in a production build).
+// - Every screen shows a "Preview mode · sample data" banner while it is on.
+// - Data lives in memory in this browser tab; nothing reaches the server or the database.
+// This is not a substitute for the real integrations (Gemini, ClinicalTrials.gov, Presage, ElevenLabs).
+import type * as T from "@/types";
+
+const KEY = "pz:preview";
+export const previewAvailable = process.env.NODE_ENV === "development";
+
+export function isPreview() {
+  if (!previewAvailable || typeof window === "undefined") return false;
+  try { return sessionStorage.getItem(KEY) === "1"; } catch { return false; }
+}
+export function setPreview(on: boolean) {
+  try { if (on) sessionStorage.setItem(KEY, "1"); else sessionStorage.removeItem(KEY); } catch { /* storage off */ }
+  db = null;
+}
+
+class PreviewError extends Error { constructor(public code: string, message: string, public status: number) { super(message); } }
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+function at(dayOffset: number, hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0); d.setDate(d.getDate() + dayOffset); return d.toISOString();
+}
+
+type DB = { profile: T.Profile | null; meds: T.Medication[]; doses: (T.Dose & { medication_id: string })[]; checkins: T.Checkin[]; bookmarks: string[] };
+let db: DB | null = null;
+
+function makeDoses(m: T.Medication, fromDay: number, everyDays = 1) {
+  const out: DB["doses"] = [];
+  const days = Math.min(m.confirmed_schedule.duration_days, 28);
+  for (let d = fromDay; d < fromDay + days; d += everyDays) for (const t of m.confirmed_schedule.times)
+    out.push({ id: uid(), medication_id: m.id, medication_name: `${m.name}${m.strength ? ` ${m.strength}` : ""}`, scheduled_at: at(d, t), status: "SCHEDULED", confirmed_at: null });
+  return out;
+}
+
+function seed(): DB {
+  const med: T.Medication = { id: "med-1", name: "Beclometasone", strength: "100 mcg", instructions: "2 puffs, morning and night", frequency: "twice daily", confirmed_schedule: { times: ["09:00", "21:00"], duration_days: 28, timezone: "Europe/London" } };
+  const med2: T.Medication = { id: "med-2", name: "Montelukast", strength: "10 mg", instructions: "1 tablet at night", frequency: "once daily", confirmed_schedule: { times: ["21:00"], duration_days: 28, timezone: "Europe/London" } };
+  const med3: T.Medication = { id: "med-3", name: "Hydrocortisone 1% cream", strength: null, instructions: "Apply thinly to the rash once a day", frequency: "once daily", confirmed_schedule: { times: ["20:00"], duration_days: 14, timezone: "Europe/London" } };
+  const med4: T.Medication = { id: "med-4", name: "Omalizumab", strength: "150 mg", instructions: "Injection under the skin every 2 weeks at the clinic", frequency: "every 2 weeks", confirmed_schedule: { times: ["10:00"], duration_days: 28, timezone: "Europe/London" } };
+  const sinceMonday = -((new Date().getDay() + 6) % 7); // fill the whole Monday-to-Sunday week
+  const doses = [...makeDoses(med, sinceMonday), ...makeDoses(med2, sinceMonday), ...makeDoses(med3, sinceMonday), ...makeDoses(med4, sinceMonday + 3, 14)];
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0); // leave today's doses for the user to log
+  doses.forEach((d, i) => { if (new Date(d.scheduled_at).getTime() < startOfToday.getTime()) { d.status = i === 2 ? "MISSED" : "TAKEN"; d.confirmed_at = d.status === "TAKEN" ? d.scheduled_at : null; } });
+  return {
+    profile: { id: "p-1", user_id: "u-1", display_name: "Maya", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
+      date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 },
+    meds: [med, med2, med3, med4], doses, bookmarks: [],
+    checkins: [{ id: uid(), heart_rate: null, breathing_rate: null, symptom_report: "Feeling: Okay\nSlightly wheezy after climbing stairs.", measurement_source: "none", recorded_at: at(-1, "08:30") }],
+  };
+}
+const state = () => (db ??= seed());
+
+const trial = (nct: string, title: string, summary: string, phase: string, place: [string, string]): T.Trial => ({
+  nct_id: nct, title, brief_summary: summary, status: "RECRUITING", conditions: ["Asthma"], interventions: ["Inhaled medicine"], phases: [phase],
+  inclusion_criteria: "Adults aged 18 to 65\nDiagnosed with asthma for at least 6 months\nUsing an inhaled steroid", exclusion_criteria: "Current smokers\nPregnant or breastfeeding",
+  min_age: "18 Years", max_age: "65 Years", locations: [{ facility: place[0], city: place[1], country: "United Kingdom" }], url: `https://clinicaltrials.gov/trial/${nct}`,
+});
+const DISCLAIMER = "Preview sample. Preliminary match only; the trial team decides who can take part.";
+const MATCHES: T.TrialMatch[] = [
+  { trial: trial("NCT-SAMPLE-1", "Sample trial: once-daily inhaler for asthma", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Hospital", "London"]),
+    status: "POTENTIAL_MATCH", why_surfaced: ["You have asthma", "You are aged 18 to 65"], relevant_criteria: ["Diagnosed with asthma", "Aged 18 to 65"],
+    missing_information: ["How long you have had asthma"], needs_coordinator_confirmation: ["Whether your current inhaler is allowed"], plain_language_summary: null, disclaimer: DISCLAIMER },
+  { trial: trial("NCT-SAMPLE-2", "Sample trial: asthma and exercise", "A made-up trial used to preview the screen layout.", "PHASE2", ["Sample Clinic", "Manchester"]),
+    status: "MORE_INFORMATION_NEEDED", why_surfaced: ["You have asthma"], relevant_criteria: ["Diagnosed with asthma"],
+    missing_information: ["Whether you smoke"], needs_coordinator_confirmation: ["Travel to Manchester for visits"], plain_language_summary: null, disclaimer: DISCLAIMER },
+  { trial: trial("NCT-SAMPLE-3", "Sample trial: severe asthma in older adults", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Centre", "Leeds"]),
+    status: "KNOWN_CRITERIA_MISMATCH", why_surfaced: ["You have asthma"], relevant_criteria: ["Must be aged 50 or over"],
+    missing_information: [], needs_coordinator_confirmation: [], plain_language_summary: null, disclaimer: DISCLAIMER },
+];
+
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+const strip = ({ ...d }: DB["doses"][number]): T.Dose => d;
+
+export async function previewRequest(path: string, init: RequestInit = {}): Promise<unknown> {
+  await new Promise((r) => setTimeout(r, 250)); // let loading states show briefly
+  const s = state();
+  const method = (init.method ?? "GET").toUpperCase();
+  const [route, query] = path.split("?");
+  const body = typeof init.body === "string" ? JSON.parse(init.body) : undefined;
+  const now = new Date();
+
+  if (route === "/auth/session") return { authenticated: true, email: "maya.preview@example.com", demo_mode: true };
+  if (route === "/auth/logout") { setPreview(false); return { status: "ok" }; }
+  if (route.startsWith("/auth/")) return { status: "ok" };
+
+  if (route === "/profile") {
+    if (method === "PUT") { s.profile = { id: "p-1", user_id: "u-1", ...body }; return s.profile; }
+    if (!s.profile) throw new PreviewError("profile_not_found", "Profile not created yet.", 404);
+    return s.profile;
+  }
+
+  if (route === "/prescriptions/parse") return {
+    medication_name: "Salbutamol", strength: "100 mcg", dose_instructions: "1 to 2 puffs when needed", frequency: "as needed",
+    times: ["08:00"], duration_days: null, plain_language_summary: "Preview sample: a reliever inhaler you use when you feel short of breath.",
+    uncertainties: ["Preview mode: this is sample text, not read from your photo.", "No duration was found."],
+  } satisfies T.ParsedPrescription;
+  if (route === "/medications" && method === "POST") {
+    const m: T.Medication = { id: uid(), name: body.name, strength: body.strength, instructions: body.instructions, frequency: body.frequency, confirmed_schedule: body.schedule };
+    s.meds.push(m); s.doses.push(...makeDoses(m, 0)); return m;
+  }
+  if (route === "/medications") return s.meds;
+
+  if (route === "/schedule/today") return s.doses.filter((d) => sameDay(new Date(d.scheduled_at), now)).sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).map(strip);
+  if (route === "/schedule/week") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // Monday
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    return s.doses.filter((d) => { const t = new Date(d.scheduled_at); return t >= start && t < end; }).sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).map(strip);
+  }
+  const dose = route.match(/^\/doses\/(.+)\/status$/);
+  if (dose) {
+    const d = s.doses.find((x) => x.id === dose[1]);
+    if (!d) throw new PreviewError("not_found", "Dose not found.", 404);
+    d.status = body.status; d.confirmed_at = body.status === "SCHEDULED" ? null : now.toISOString(); return strip(d);
+  }
+
+  if (route === "/adherence/summary") {
+    const due = s.doses.filter((d) => new Date(d.scheduled_at) <= now);
+    const c = (st: T.DoseStatus) => due.filter((d) => d.status === st).length;
+    return { scheduled_doses: due.length, reported_taken: c("TAKEN"), reported_missed: c("MISSED"), reported_skipped: c("SKIPPED"),
+      reported_adherence_percentage: due.length ? Math.round((1000 * c("TAKEN")) / due.length) / 10 : null, note: "Preview sample data." };
+  }
+  if (route === "/adherence/history") {
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(now); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() - 6 + i);
+      const ds = s.doses.filter((d) => sameDay(new Date(d.scheduled_at), day) && new Date(d.scheduled_at) <= now);
+      const ymd = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+      return { day: ymd, scheduled: ds.length, taken: ds.filter((d) => d.status === "TAKEN").length, missed: ds.filter((d) => d.status === "MISSED").length };
+    });
+  }
+
+  if (route === "/trials/matches") return s.profile?.conditions.length ? MATCHES : [];
+  if (route === "/trials/bookmarks") { if (method === "POST") s.bookmarks.push(body.nct_id); return method === "POST" ? { nct_id: body.nct_id } : s.bookmarks.map((n) => ({ nct_id: n, created_at: now.toISOString() })); }
+  if (route === "/trials/search") {
+    const q = new URLSearchParams(query).get("q")?.toLowerCase() ?? "";
+    return MATCHES.map((m) => m.trial).filter((t) => t.title.toLowerCase().includes(q) || t.conditions.some((c) => c.toLowerCase().includes(q)));
+  }
+  if (route.startsWith("/trials/")) {
+    const t = MATCHES.find((m) => m.trial.nct_id === decodeURIComponent(route.slice(8)))?.trial;
+    if (!t) throw new PreviewError("not_found", "Trial not found in preview data.", 404);
+    return t;
+  }
+
+  if (route === "/health-checkins") {
+    if (method === "POST") {
+      if (!body.consent_given) throw new PreviewError("validation_error", "Consent is required to save a check-in.", 422);
+      const c: T.Checkin = { id: uid(), heart_rate: body.heart_rate, breathing_rate: body.breathing_rate, symptom_report: body.symptom_report, measurement_source: body.measurement_source, recorded_at: now.toISOString() };
+      s.checkins.push(c); return c;
+    }
+    return s.checkins;
+  }
+
+  if (route === "/voice/explain") throw new PreviewError("voice_unavailable", "Read aloud needs the backend.", 503);
+  throw new PreviewError("not_in_preview", `Preview mode has no sample data for ${route}.`, 404);
+}
+
+export { PreviewError };

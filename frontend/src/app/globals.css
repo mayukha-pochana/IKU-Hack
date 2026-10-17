@@ -2,5 +2,301 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-white text-slate-900 antialiased; }
-:focus-visible { @apply outline outline-2 outline-offset-2 outline-brand-600; }
+/* PhaseZero design system — tokens from project/tokens.json, components from project/components/bundle.css.
+   Source: https://claude.ai/artifact/KFUiGpp3rkUzRoYdidtcTT. Light theme first; add class="dark" on <html> for dark. */
+:root {
+  --surface: #faf9ff; --surface-raised: #ffffff; --violet-soft: #eeebff; --mint-soft: #ddf5ec;
+  --line: #e4e0f5; --line-strong: #7d77ad; --ink: #1c1a33; --ink-muted: #5a5680;
+  --violet: #3b2f8f; --violet-text: #3b2f8f; --on-violet: #ffffff;
+  --mint: #3cc8a1; --mint-text: #0b7a5c; --mint-deep: #2fa886; --mint-light: #4fd3ae; --peach: #ffe3d6;
+  --success: #0b6e50; --success-soft: #d8f5ec; --warning: #7a4a05; --warning-soft: #fdf0d5;
+  --danger: #a32d2d; --danger-soft: #fbe3e3; --focus: #6b5ce7;
+  --shadow-card: 0 1px 2px rgba(28,26,51,0.06), 0 4px 16px rgba(28,26,51,0.06);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
+  /* shadcn/ui mapping */
+  --background: var(--surface); --foreground: var(--ink); --card: var(--surface-raised);
+  --primary: var(--violet); --primary-foreground: var(--on-violet);
+  --secondary: var(--violet-soft); --secondary-foreground: var(--violet-text);
+  --muted: var(--violet-soft); --muted-foreground: var(--ink-muted);
+  --accent: var(--mint-soft); --accent-foreground: var(--ink);
+  --destructive: var(--danger); --border: var(--line); --input: var(--line-strong); --ring: var(--focus);
+  --radius: 12px;
+}
+.dark {
+  --surface: #141226; --surface-raised: #1e1b36; --violet-soft: #2a2554; --mint-soft: #12352c;
+  --line: #34305a; --line-strong: #7e78b0; --ink: #f3f1ff; --ink-muted: #b9b4da;
+  --violet: #6b5ce7; --violet-text: #a99bff; --mint-text: #3cc8a1; --mint-deep: #249273; --peach: #3a2420;
+  --success: #7be0bf; --success-soft: #12352c; --warning: #f5c46b; --warning-soft: #3a2a0c;
+  --danger: #ff9c9c; --danger-soft: #3d1717; --focus: #a99bff;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 80px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { font-variant-numeric: tabular-nums; }
+h1, h2, h3 { text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* PhaseZero components. Every value comes from tokens.css. Prefix: pz- */
+body { font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif; color: var(--ink); background: var(--surface); margin: 0; }
+.pz-stack { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+.pz-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4); }
+
+/* Button */
+.pz-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 44px; padding: var(--space-3) var(--space-6); border-radius: var(--radius-md); border: 1.5px solid transparent; font: 600 16px/24px var(--font-sans); cursor: pointer; text-decoration: none; }
+.pz-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pz-btn--primary { background: var(--violet); color: var(--on-violet); }
+.pz-btn--secondary { background: var(--surface-raised); color: var(--violet-text); border-color: var(--line-strong); }
+.pz-btn--ghost { background: transparent; color: var(--violet-text); padding-inline: var(--space-3); }
+.pz-btn--success { background: var(--success-soft); color: var(--success); }
+.pz-btn--danger { background: var(--danger-soft); color: var(--danger); }
+.pz-btn--sm { min-height: 36px; padding: var(--space-2) var(--space-4); font-size: 14px; line-height: 20px; border-radius: var(--radius-sm); }
+.pz-btn--lg { min-height: 52px; padding: var(--space-3) var(--space-8); font-size: 18px; line-height: 28px; }
+.pz-btn--icon { width: 44px; padding: 0; border-radius: var(--radius-pill); background: var(--violet-soft); color: var(--violet-text); }
+.pz-btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.pz-spin { position: relative; flex: none; width: 20px; height: 20px; border-radius: var(--radius-pill); background: var(--mint); box-shadow: inset 0 0 0 2px var(--mint-deep); animation: pz-spin 1s linear infinite; }
+.pz-spin::after { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; height: 2px; margin-top: -1px; border-radius: var(--radius-pill); background: var(--mint-deep); transform: rotate(-45deg); }
+.pz-spin::before { content: ""; position: absolute; inset: 4px; border-radius: var(--radius-pill); border: 1.5px solid transparent; border-left-color: var(--surface-raised); transform: rotate(30deg); opacity: .75; }
+.pz-spin--lg { width: 40px; height: 40px; box-shadow: inset 0 0 0 3px var(--mint-deep); }
+.pz-spin--lg::after { left: 8px; right: 8px; height: 3px; margin-top: -1.5px; }
+.pz-spin--lg::before { inset: 8px; border-width: 2.5px; }
+@keyframes pz-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pz-spin { animation: pz-pulse 1.6s ease-in-out infinite; } }
+@keyframes pz-pulse { 50% { opacity: .55; } }
+.pz-loading { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-6); font: 400 16px/24px var(--font-sans); color: var(--ink-muted); text-align: center; }
+
+/* Badge */
+.pz-badge { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font: 500 14px/20px var(--font-sans); }
+.pz-badge--success { background: var(--success-soft); color: var(--success); }
+.pz-badge--warning { background: var(--warning-soft); color: var(--warning); }
+.pz-badge--danger { background: var(--danger-soft); color: var(--danger); }
+.pz-badge--neutral { background: var(--violet-soft); color: var(--violet-text); }
+.pz-badge svg { width: 16px; height: 16px; flex: none; }
+
+/* Card */
+.pz-card { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-3); }
+.pz-card__title { margin: 0; font: 600 20px/28px var(--font-sans); color: var(--ink); }
+.pz-card__meta { margin: 0; font: 400 14px/20px var(--font-sans); color: var(--ink-muted); }
+.pz-card__body { margin: 0; font: 400 16px/24px var(--font-sans); color: var(--ink); }
+.pz-card__row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.pz-card__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
+
+/* Medication */
+.pz-dose { display: flex; align-items: center; gap: var(--space-4); }
+.pz-dose__time { min-width: 64px; font: 600 18px/28px var(--font-sans); color: var(--violet-text); font-variant-numeric: tabular-nums; }
+.pz-dose__main { flex: 1; min-width: 0; }
+.pz-dose__name { margin: 0; font: 600 18px/28px var(--font-sans); }
+.pz-dose__how { margin: 0; font: 400 16px/24px var(--font-sans); color: var(--ink-muted); }
+
+/* Text field */
+.pz-field { display: flex; flex-direction: column; gap: var(--space-1); max-width: 360px; }
+.pz-field__label { font: 500 14px/20px var(--font-sans); color: var(--ink); }
+.pz-field__input { min-height: 44px; padding: var(--space-2) var(--space-3); border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--ink); font: 400 16px/24px var(--font-sans); }
+.pz-field__input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pz-field__help { font: 400 14px/20px var(--font-sans); color: var(--ink-muted); }
+.pz-field--error .pz-field__input { border-color: var(--danger); }
+.pz-field--error .pz-field__help { color: var(--danger); }
+
+/* Notice */
+.pz-notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font: 400 14px/20px var(--font-sans); }
+.pz-notice svg { width: 20px; height: 20px; flex: none; margin-top: 0; }
+.pz-notice--info { background: var(--violet-soft); color: var(--ink); }
+.pz-notice--info svg { color: var(--violet-text); }
+.pz-notice--warning { background: var(--warning-soft); color: var(--warning); }
+.pz-notice--success { background: var(--mint-soft); color: var(--ink); }
+.pz-notice--success svg { color: var(--mint-text); }
+
+/* Pill box: a classic 7-day strip, seen from above, with a status line under each day */
+.pz-pillbox { display: inline-flex; flex-direction: column; align-self: flex-start; gap: var(--space-2); }
+.pz-pillbox__tray { display: grid; grid-template-columns: repeat(7, 64px); gap: 6px; padding: 6px; border-radius: 14px; background: var(--violet); box-shadow: 0 4px 0 rgba(28,26,51,.18); }
+.pz-pillbox__day { position: relative; height: 84px; border: 0; padding: 0; border-radius: 9px; background: var(--surface-raised); box-shadow: inset 0 3px 6px rgba(28,26,51,.22); cursor: pointer; font-family: var(--font-sans); overflow: hidden; }
+.pz-pillbox__day:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.pz-pillbox__ghost { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 600 32px/1 var(--font-sans); color: var(--line); }
+.pz-pillbox__well { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.pz-pillbox__well .pz-tab { width: 30px; height: 30px; transition: transform .35s ease .25s, opacity .25s ease .35s; }
+.pz-pillbox__lid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--violet-soft); box-shadow: inset 0 0 0 1.5px var(--line-strong); color: var(--violet-text); font: 600 22px/1 var(--font-sans); transform-origin: 50% 0; transition: transform .4s cubic-bezier(.5,0,.75,0), opacity .15s linear .25s; }
+.pz-pillbox__lid::after { content: ""; position: absolute; bottom: 7px; left: 50%; width: 18px; height: 4px; margin-left: -9px; border-radius: var(--radius-pill); background: var(--violet); opacity: .45; }
+.pz-pillbox__day[aria-pressed="true"] .pz-pillbox__lid { transform: rotateX(-90deg); opacity: 0; }
+.pz-pillbox__day[aria-pressed="true"] .pz-tab { transform: translateY(-24px) scale(.5); opacity: 0; }
+.pz-pillbox__day--today .pz-pillbox__lid { box-shadow: inset 0 0 0 3px var(--mint); }
+.pz-pillbox__day--missed .pz-pillbox__lid { background: var(--danger-soft); color: var(--danger); box-shadow: inset 0 0 0 2.5px var(--danger); }
+.pz-pillbox__day--rest { cursor: default; background: repeating-linear-gradient(135deg, var(--violet-soft) 0 6px, var(--surface-raised) 6px 12px); }
+.pz-pillbox__day--rest .pz-pillbox__ghost { color: var(--ink-muted); font-size: 20px; }
+.pz-pillbox__day[aria-disabled="true"] { cursor: default; }
+.pz-pillbox__caption { margin: var(--space-2) 0 0; font: 400 14px/20px var(--font-sans); color: var(--ink-muted); }
+@media (prefers-reduced-motion: reduce) { .pz-pillbox__lid, .pz-pillbox__well .pz-tab { transition: none; } }
+
+/* Tablet: the round scored tablet from the logo, as an inline SVG */
+.pz-tab { display: block; }
+.pz-tab__rim { fill: var(--mint-deep); }
+.pz-tab__body { fill: var(--mint); }
+.pz-tab__face { fill: var(--mint-light); }
+.pz-tab__score { stroke: var(--mint-deep); stroke-width: 1.3; stroke-linecap: round; fill: none; }
+.pz-tab__shine { stroke: var(--on-violet); stroke-width: 1.5; stroke-linecap: round; fill: none; opacity: .6; }
+
+/* Blister pack: a violet foil sheet; each logo tablet fills its bubble */
+.pz-blister { display: inline-grid; grid-template-columns: auto auto; gap: var(--space-2) var(--space-3); align-items: center; }
+.pz-blister__days { grid-column: 2; display: grid; grid-template-columns: repeat(7, 40px); gap: 10px; padding: 0 16px; }
+.pz-blister__head, .pz-blister__row { font: 500 13px/1 var(--font-sans); color: var(--ink-muted); text-align: center; }
+.pz-blister__labels { display: grid; grid-template-rows: 40px 40px; row-gap: 26px; padding: 14px 0; }
+.pz-blister__row { display: flex; align-items: center; justify-content: flex-end; }
+.pz-blister__sheet { position: relative; display: grid; grid-template-columns: repeat(7, 40px); grid-template-rows: 40px 40px; gap: 26px 10px; padding: 14px 16px; border-radius: 22px; background: var(--violet); box-shadow: 0 4px 0 rgba(28,26,51,.18); }
+.pz-blister__sheet::before { content: ""; position: absolute; left: 22px; right: 22px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: var(--radius-pill); background: rgba(0,0,0,.22); }
+.pz-blister__cell { position: relative; width: 40px; height: 40px; border: 0; padding: 0; border-radius: var(--radius-pill); background: rgba(0,0,0,.22); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pz-blister__cell:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.pz-blister__cell .pz-tab { position: absolute; left: 1px; top: 1px; width: 38px; height: 38px; transition: transform .15s ease; }
+.pz-blister__cell:active .pz-tab { transform: scale(.92); }
+.pz-blister__tick { display: none; width: 20px; height: 20px; color: var(--on-violet); }
+.pz-blister__cell[aria-pressed="true"] { box-shadow: inset 2px 3px 0 rgba(0,0,0,.25); }
+.pz-blister__cell[aria-pressed="true"] .pz-tab { display: none; }
+.pz-blister__cell[aria-pressed="true"] .pz-blister__tick { display: block; }
+.pz-blister__cell--missed { box-shadow: 0 0 0 2px var(--danger-soft), 0 0 0 4px var(--danger); }
+.pz-blister__count { margin: var(--space-3) 0 0; font: 500 16px/24px var(--font-sans); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .pz-blister__cell .pz-tab { transition: none; } }
+
+/* Toggle: the logo tablet slides along a pill track and turns 45 degrees */
+.pz-toggle { display: inline-flex; align-items: center; gap: var(--space-3); font: 400 16px/24px var(--font-sans); color: var(--ink); cursor: pointer; }
+.pz-toggle__track { position: relative; flex: none; width: 60px; height: 32px; border: 0; padding: 0; border-radius: var(--radius-pill); background: var(--line-strong); cursor: pointer; transition: background .3s; }
+.pz-toggle__track:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pz-toggle__thumb { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: var(--radius-pill); box-shadow: 0 1px 2px rgba(28,26,51,.3); transition: transform .4s cubic-bezier(.4,1.2,.5,1); }
+.pz-toggle__thumb .pz-tab { width: 26px; height: 26px; }
+.pz-toggle__track[aria-checked="true"] { background: var(--violet); }
+.pz-toggle__track[aria-checked="true"] .pz-toggle__thumb { transform: translateX(28px) rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .pz-toggle__track, .pz-toggle__thumb { transition: none; } }
+
+/* Segmented control */
+.pz-seg { display: inline-flex; padding: 4px; gap: 4px; border-radius: var(--radius-pill); background: var(--violet-soft); }
+.pz-seg__opt { border: 0; min-height: 36px; padding: 0 var(--space-4); border-radius: var(--radius-pill); background: transparent; color: var(--violet-text); font: 500 14px/20px var(--font-sans); cursor: pointer; }
+.pz-seg__opt[aria-checked="true"] { background: var(--surface-raised); color: var(--ink); box-shadow: 0 1px 3px rgba(28,26,51,.15); }
+.pz-seg__opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Chip */
+.pz-chip { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 36px; padding: 0 var(--space-4); border-radius: var(--radius-pill); border: 1.5px solid var(--line-strong); background: var(--surface-raised); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
+.pz-chip svg { width: 16px; height: 16px; display: none; }
+.pz-chip[aria-pressed="true"] { background: var(--violet); border-color: var(--violet); color: var(--on-violet); }
+.pz-chip[aria-pressed="true"] svg { display: block; }
+.pz-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Checkbox */
+.pz-check { display: inline-flex; align-items: flex-start; gap: var(--space-3); font: 400 16px/24px var(--font-sans); color: var(--ink); cursor: pointer; max-width: 440px; }
+.pz-check input { appearance: none; flex: none; width: 24px; height: 24px; margin: 0; border-radius: 7px; border: 2px solid var(--line-strong); background: var(--surface-raised); display: grid; place-content: center; cursor: pointer; transition: background .15s; }
+.pz-check input::after { content: ""; width: 12px; height: 7px; border-left: 2.5px solid var(--on-violet); border-bottom: 2.5px solid var(--on-violet); transform: translateY(-2px) rotate(-45deg) scale(0); transition: transform .15s; }
+.pz-check input:checked { background: var(--violet); border-color: var(--violet); }
+.pz-check input:checked::after { transform: translateY(-2px) rotate(-45deg) scale(1); }
+.pz-check input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Stepper: onboarding progress as capsules */
+.pz-steps { display: flex; flex-direction: column; gap: var(--space-2); max-width: 360px; }
+.pz-steps__bar { display: flex; gap: 6px; }
+.pz-steps__seg { flex: 1; height: 10px; border-radius: var(--radius-pill); background: var(--violet-soft); overflow: hidden; }
+.pz-steps__seg--done { background: var(--violet); }
+.pz-steps__seg--now { background: linear-gradient(90deg, var(--violet) 50%, var(--mint) 50%); }
+.pz-steps__label { font: 500 14px/20px var(--font-sans); color: var(--ink-muted); }
+
+/* --- App additions built from the same tokens --- */
+.pz-notice--danger { background: var(--danger-soft); color: var(--danger); }
+.pz-link { color: var(--violet-text); text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+.pz-link:hover { text-decoration-thickness: 2px; }
+.pz-field__textarea { min-height: 96px; resize: vertical; }
+.pz-field--wide { max-width: none; }
+.pz-progress { height: 10px; border-radius: var(--radius-pill); background: var(--violet-soft); overflow: hidden; }
+.pz-progress > span { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--mint); }
+.pz-blister__cell[aria-disabled="true"] { cursor: default; }
+.pz-blister__cell--empty { background: transparent; box-shadow: none; cursor: default; }
+@media (max-width: 640px) {
+  .pz-blister { overflow-x: auto; max-width: 100%; }
+}
+/* Read-only pill box (adherence summary): taken days get a green lid, matching the red missed lid. */
+.pz-pillbox__day--taken .pz-pillbox__lid { background: var(--success-soft); color: var(--success); box-shadow: inset 0 0 0 2.5px var(--success); }
+.pz-field__input[readonly] { background: var(--violet-soft); border-color: var(--line); color: var(--ink-muted); }
+
+/* --- Dose icons per administration route (DoseIcon.tsx). Colours follow the pack's tablet colour vars. --- */
+.pz-dose-icon { overflow: hidden; }
+/* Only the moving parts get their own transform box; static parts (like the tablet score line) keep SVG defaults. */
+.pz-inh__can, .pz-inh__puff, .pz-syr__plunger, .pz-syr__liquid, .pz-syr__drop, .pz-cream__tube, .pz-cream__dollop { transform-box: fill-box; }
+/* Inhaler (flat cartoon) */
+.pz-inh__cap { fill: #d3d6de; }
+.pz-inh__label { fill: #ffffff; }
+.pz-inh__stripes { stroke: var(--mint-deep); stroke-width: .8; stroke-linecap: round; }
+.pz-inh__boot { fill: var(--mint-deep); }
+.pz-inh__side { fill: var(--mint); }
+.pz-inh__mouth { fill: var(--mint-light); }
+.pz-inh__puff { fill: #ffffff; opacity: 0; transform-origin: center; }
+
+/* Syringe */
+.pz-syr__needle { stroke: #9aa0b0; stroke-width: .9; stroke-linecap: round; }
+.pz-syr__hub { fill: var(--mint-deep); }
+.pz-syr__flange { fill: #e3e5ec; stroke: #8a8ea3; stroke-width: .5; }
+.pz-syr__barrel { fill: #ffffff; fill-opacity: .92; stroke: #8a8ea3; stroke-width: .6; }
+.pz-syr__liquid { fill: var(--mint); opacity: .9; transform-origin: right center; }
+.pz-syr__marks { stroke: #5a5680; stroke-width: .45; }
+.pz-syr__rod { fill: #e3e5ec; stroke: #8a8ea3; stroke-width: .5; }
+.pz-syr__thumb { fill: #e3e5ec; stroke: #8a8ea3; stroke-width: .5; }
+.pz-syr__stopper { fill: #2b2840; }
+.pz-syr__drop { fill: var(--mint); stroke: var(--mint-deep); stroke-width: .3; opacity: 0; transform-origin: center; }
+
+/* Cream tube */
+.pz-cream__crimp { fill: var(--mint-deep); }
+.pz-cream__body { fill: var(--mint); stroke: var(--mint-deep); stroke-width: .7; stroke-linejoin: round; }
+.pz-cream__band { fill: var(--on-violet); opacity: .45; }
+.pz-cream__nozzle { fill: #ffffff; stroke: var(--mint-deep); stroke-width: .6; }
+.pz-cream__swirl { fill: #ffffff; stroke: var(--mint-deep); stroke-width: .45; }
+.pz-cream__dollop { opacity: 0; transform-origin: left center; }
+.pz-cream__tube { transform-origin: left center; }
+
+/* Animations (play while the blister cell has .is-taking, about 700ms, then the dose is logged) */
+
+.is-taking .pz-inh__can { animation: pz-press .7s ease-in-out forwards; }
+.is-taking .pz-inh__puff { animation: pz-puff .6s ease-out .18s forwards; }
+.is-taking .pz-inh__puff--2 { animation-name: pz-puff-up; animation-delay: .24s; }
+.is-taking .pz-inh__puff--3 { animation-name: pz-puff-down; animation-delay: .28s; }
+.is-taking .pz-inh__puff--4 { animation-delay: .32s; }
+
+.is-taking .pz-syr__plunger { animation: pz-plunge .45s ease-in forwards; }
+.is-taking .pz-syr__liquid { animation: pz-empty .45s ease-in forwards; }
+.is-taking .pz-syr__drop--1 { animation: pz-squirt .4s ease-out .38s forwards; }
+.is-taking .pz-syr__drop--2 { animation: pz-squirt-2 .4s ease-out .44s forwards; }
+.is-taking .pz-syr__drop--3 { animation: pz-squirt-3 .4s ease-out .5s forwards; }
+
+.is-taking .pz-cream__tube { animation: pz-squeeze .5s ease-in-out forwards; }
+.is-taking .pz-cream__dollop { animation: pz-dollop .5s ease-out .2s forwards; }
+
+@keyframes pz-press { 30%, 60% { transform: translateY(1.8px); } 100% { transform: translateY(0); } }
+@keyframes pz-puff { 0% { opacity: 1; transform: translate(0, 0) scale(.3); } 60% { opacity: .95; } 100% { opacity: 0; transform: translate(2.4px, 0) scale(1.7); } }
+@keyframes pz-puff-up { 0% { opacity: 1; transform: translate(0, 0) scale(.3); } 60% { opacity: .95; } 100% { opacity: 0; transform: translate(2px, -1.6px) scale(1.6); } }
+@keyframes pz-puff-down { 0% { opacity: 1; transform: translate(0, 0) scale(.3); } 60% { opacity: .95; } 100% { opacity: 0; transform: translate(2px, 1.4px) scale(1.5); } }
+@keyframes pz-plunge { to { transform: translateX(4.6px); } }
+@keyframes pz-empty { to { transform: scaleX(.1); } }
+@keyframes pz-squirt { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(1.4px, 0) scale(.8); } }
+@keyframes pz-squirt-2 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(1px, -1.4px) scale(.8); } }
+@keyframes pz-squirt-3 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(1px, 1.4px) scale(.8); } }
+@keyframes pz-squeeze { 40% { transform: scale(1, .72); } 100% { transform: scale(1, .9); } }
+@keyframes pz-dollop { 0% { opacity: 0; transform: scale(.2); } 50% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .is-taking *, .is-taking .pz-dose-icon { animation: none !important; } }
+
+/* Streak flame flicker */
+.pz-flame__outer, .pz-flame__inner { transform-box: fill-box; transform-origin: 50% 100%; animation: pz-flicker 1.8s ease-in-out infinite; }
+.pz-flame__inner { animation-duration: 1.3s; animation-delay: -.4s; }
+.pz-flame__spark { animation: pz-spark 2.4s ease-in-out infinite; transform-box: fill-box; }
+@keyframes pz-flicker { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.96, 1.05); } }
+@keyframes pz-spark { 0%, 100% { opacity: .9; transform: translateY(0); } 50% { opacity: .3; transform: translateY(-1.5px); } }
+@media (prefers-reduced-motion: reduce) { .pz-flame * { animation: none !important; } }
+
+/* Single-choice chips (role="radio") share the selected chip look. */
+.pz-chip[aria-checked="true"] { background: var(--violet); border-color: var(--violet); color: var(--on-violet); }
+.pz-chip[aria-checked="true"] svg { display: block; }
+/* Condition search suggestions */
+.pz-listbox { position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 4px); max-height: 264px; overflow-y: auto; background: var(--surface-raised); border: 1.5px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 4px; }
+.pz-option { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-sm); cursor: pointer; }
+.pz-option[aria-selected="true"] { background: var(--violet-soft); color: var(--violet-text); }
+
+/* Dropdowns match the text fields instead of the browser's default look. */
+select.pz-field__input {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  background-color: var(--surface-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b2f8f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;
+  padding-right: 44px;
+}
+select.pz-field__input:hover { border-color: var(--violet); }
