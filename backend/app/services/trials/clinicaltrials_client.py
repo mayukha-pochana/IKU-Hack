@@ -71,6 +71,21 @@ async def get_trial(nct_id: str) -> Trial:
     return parse_study(r.json())
 
 
+async def get_trials(nct_ids: list[str]) -> list[Trial]:
+    """Fetch current records for known IDs in one call, preserving the requested (relevance) order."""
+    if not nct_ids:
+        return []
+    params = {"filter.ids": ",".join(nct_ids), "pageSize": len(nct_ids)}
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.get(f"{BASE}/studies", params=params)
+            r.raise_for_status()
+    except httpx.HTTPError as e:
+        raise AppError("clinicaltrials_unavailable", "ClinicalTrials.gov request failed.", 502, {"reason": str(e)})
+    found = {t.nct_id: t for t in (parse_study(s) for s in r.json().get("studies", []))}
+    return [found[i] for i in nct_ids if i in found]
+
+
 async def iter_recruiting_pages(term: str, page_size: int = 100, max_pages: int = 10):
     """Yield lists of Trial across pages using v2 `nextPageToken`. Used by scripts/sync_trials.py."""
     params = {"query.term": term, "filter.overallStatus": "RECRUITING", "pageSize": page_size}

@@ -1,6 +1,7 @@
 # OWNER: Member 3
 from enum import Enum
-from pydantic import BaseModel
+from typing import Annotated, Literal
+from pydantic import BaseModel, Field
 
 
 class MatchStatus(str, Enum):
@@ -44,3 +45,41 @@ class TrialMatch(BaseModel):
 
 class BookmarkIn(BaseModel):
     nct_id: str
+
+
+# --- Gemini trial explanation (Gemini side track). Gemini fills GeminiTrialExplanation; the backend
+# derives each criterion's effect and the overall status deterministically.
+class GeminiCriterion(BaseModel):
+    kind: Literal["inclusion", "exclusion"]
+    original_text: Annotated[str, Field(min_length=1, max_length=1500)]
+    plain_text: Annotated[str, Field(min_length=1, max_length=1000)]
+    applies_to_patient: Literal["YES", "NO", "UNKNOWN"] = Field(
+        description="Does the patient record show this criterion describes the patient? UNKNOWN if the record is silent.")
+    evidence: Annotated[str, Field(max_length=500)] | None = Field(
+        description="The record field supporting YES/NO, quoted from the record; null when UNKNOWN.")
+    question_for_coordinator: Annotated[str, Field(max_length=500)] | None
+
+
+class GeminiTrialExplanation(BaseModel):
+    plain_summary: Annotated[str, Field(min_length=1, max_length=2000)]
+    criteria: list[GeminiCriterion] = Field(max_length=60)
+    questions_to_ask: list[Annotated[str, Field(max_length=500)]] = Field(max_length=15)
+    missing_profile_fields: list[Annotated[str, Field(max_length=200)]] = Field(max_length=20)
+
+
+class CriterionAssessment(GeminiCriterion):
+    effect: Literal["supports", "conflicts", "unknown"]
+    quote_verified: bool   # original_text found verbatim in the registry criteria
+
+
+class TrialExplanation(BaseModel):
+    nct_id: str
+    title: str
+    url: str
+    status: MatchStatus
+    plain_summary: str
+    criteria: list[CriterionAssessment]
+    questions_to_ask: list[str]
+    missing_profile_fields: list[str]
+    why_surfaced: list[str]
+    disclaimer: str = "Preliminary screening only. Eligibility is decided by the study team."

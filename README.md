@@ -27,12 +27,25 @@ cd frontend && npm install && npm run dev   # http://localhost:3000
 ## Integration status (keep honest!)
 | Integration | Status | Notes |
 |---|---|---|
-| Gemini (prescription + trial simplification) | TODO | set `GEMINI_API_KEY`, verify `GEMINI_MODEL` |
+| Gemini (prescription + trial explanation) | Implemented, live-tested | set `GEMINI_API_KEY`, verify `GEMINI_MODEL`; `POST /api/trials/{nct_id}/explain` |
 | ClinicalTrials.gov v2 | TODO | no key needed; optional cache: `python -m scripts.sync_trials asthma` |
 | Presage SmartSpectra | TODO | see `backend/app/services/presage/README.md` |
-| ElevenLabs | TODO | set `ELEVENLABS_API_KEY` |
+| ElevenLabs | Implemented, mock-tested | set `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`; `POST /api/voice/explain` |
+| Snowflake Cortex Search | Implemented, mock-tested | see [Snowflake](#snowflake-trial-search); unset = existing cache/live search |
 | Tiger Data | TODO | set `DATABASE_URL` |
 | Vultr | OPTIONAL | |
+
+## Snowflake trial search
+Snowflake holds only public ClinicalTrials.gov data; patient data never leaves Postgres. Only de-identified
+search text (conditions, age band, medication names, location) is sent at query time.
+
+1. In a Snowsight worksheet, run sections 1-2 of [`docs/snowflake-setup.sql`](docs/snowflake-setup.sql).
+2. Create a programmatic access token, then set `SNOWFLAKE_ACCOUNT_URL` and `SNOWFLAKE_PAT` in `backend/.env`.
+3. Load trials (SQL API, from `backend/`): `python -m scripts.sync_trials_snowflake asthma "type 2 diabetes"`
+4. Run sections 3-4 of the SQL file: pick an `AI_COMPLETE` model available in your region, then create the
+   Cortex Search service.
+5. `GET /api/trials/matches` now returns `X-Trials-Source: snowflake_cortex`. If Snowflake is unset or fails,
+   it falls back to the Postgres cache / live ClinicalTrials.gov.
 
 ## Docs
 `docs/architecture.md`, `docs/api-contracts.md`, `docs/team-ownership.md`, `docs/demo-script.md`, `docs/devpost-draft.md`
