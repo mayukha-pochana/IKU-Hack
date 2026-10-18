@@ -1,0 +1,21 @@
+{
+  "name": "careflow-presage-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "build": "esbuild renderer.js --bundle --platform=browser --outfile=dist/renderer.js",
+    "start": "npm run build && electron .",
+    "check:sdk": "node check-sdk.mjs",
+    "check:desktop": "npm run build && electron . --careflow-smoke-test",
+    "test": "node --test *.test.mjs"
+  },
+  "dependencies": {
+    "@smartspectra/node-sdk": "3.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "esbuild": "^0.25.0"
+  }
+}

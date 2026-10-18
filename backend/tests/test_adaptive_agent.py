@@ -317,7 +317,9 @@ def test_stopping_a_medicine_removes_future_doses_and_updates_trials(world, db):
     from app.models.dose_event import DoseEvent
     from app.models.medication import Medication
     world.client.post(f"/api/trials/{NCT}/explain")
-    confirm_insulin(world.client)
+    r = world.client.post("/api/medications", json={"name": "Insulin", "strength": "10 units",       # 3 days: always
+                                                    "schedule": {"times": ["09:00"], "duration_days": 3}})  # has future doses
+    assert r.status_code == 201
     _, c = conclusion(world.client)
     assert c["status"] == "KNOWN_CRITERIA_MISMATCH"
     insulin = db.query(Medication).filter(Medication.name == "Insulin").one()

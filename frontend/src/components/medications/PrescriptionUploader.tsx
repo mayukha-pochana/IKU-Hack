@@ -8,6 +8,7 @@ import { medications, prescriptions } from "@/lib/api";
 import type { ParsedPrescription, SchedulePattern } from "@/types";
 import { Chip, Loader, Notice, Segmented, Spinner, TextField, errorMessage } from "@/components/ui/pz";
 import { WEEKDAYS, fieldOf, fromFrequency } from "@/lib/schedule";
+import { GeminiCredit } from "@/components/ui/GeminiCredit";
 
 type Form = {
   name: string; strength: string; instructions: string; frequency: string; pattern: SchedulePattern;
@@ -177,6 +178,7 @@ export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
       {f && parsed && (
         <form onSubmit={confirm} className="flex flex-col gap-4">
           <Notice>Check these details match your prescription. Nothing is saved until you confirm.</Notice>
+          <GeminiCredit what="Label read by Gemini" />
           {general.length > 0 && (
             <Notice tone="warning">
               <p className="font-medium">Please check:</p>

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ArrowRight, BellRing, Check, Clock, PencilLine } from "lucide-react";
 import { updates } from "@/lib/api";
 import type { FixOption, TrialUpdate, TrialUpdateItem } from "@/types";
-import { Notice, Spinner, errorMessage } from "@/components/ui/pz";
+import { MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
 
 const MEDICATION_FIX = /^medication_/;
 
@@ -135,4 +135,44 @@ export function CheckinOutcome({ refreshKey }: { refreshKey: number }) {
       {msg.nct && <Link href={`/trials/${msg.nct}`} className="pz-link">See what changed</Link>}
     </Notice>
   );
+}
+
+/** Before and after: every time PhaseZero changed its answer for this trial, what caused it, oldest first. */
+export function TrialHistory({ nctId, refreshKey = 0 }: { nctId: string; refreshKey?: number }) {
+  const [steps, setSteps] = useState<{ at: string; cause: string; to: TrialUpdate["status"]; reason: string }[]>([]);
+  useEffect(() => {
+    updates.timeline().then((events) => setSteps(events
+      .flatMap((e) => e.changes.filter((c) => c.nct_id === nctId).map((c) => ({ at: e.created_at, cause: cause(e.kind, e.summary), to: c.to, reason: c.reason })))
+      .reverse())).catch(() => setSteps([]));
+  }, [nctId, refreshKey]);
+  if (steps.length < 2) return null;   // nothing has changed yet
+  return (
+    <div className="mt-2 border-t border-line pt-3">
+      <h3 className="text-label text-ink-muted">How this answer changed</h3>
+      <ol className="mt-2 flex flex-col">
+        {steps.map((s, i) => (
+          <li key={`${s.at}-${i}`} className="relative flex gap-3 pb-4 last:pb-0">
+            <span aria-hidden="true" className="relative flex w-4 shrink-0 justify-center">
+              <span className={`mt-1.5 h-2.5 w-2.5 rounded-pill ${i === steps.length - 1 ? "bg-violet" : "bg-line-strong"}`} />
+              {i < steps.length - 1 && <span className="absolute top-4 bottom-[-4px] w-px bg-line" />}
+            </span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="text-caption text-ink-muted">{clockTime(s.at)} · {s.cause}</p>
+              <MatchBadge status={s.to} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function cause(kind: string, summary: string) {
+  if (kind === "trial_watched") return "First check";
+  return summary.replace(/\s*PhaseZero will keep it updated\.?$/, "").replace(/\.$/, "");
+}
+
+function clockTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
