@@ -14,7 +14,7 @@ import jpeg from 'jpeg-js';
 import { MeasurementTracker } from './capture-state.mjs';
 
 const require = createRequire(import.meta.url);
-const { SmartSpectraSDK, FrameTransform, PixelFormat, breathingMetrics, cardioMetrics, decodeMetrics } =
+const { SmartSpectraSDK, FrameTransform, PixelFormat, MetricType, decodeMetrics } =
   require('@smartspectra/node-sdk');
 
 const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '.env');
@@ -58,7 +58,8 @@ async function measure(ws, req) {
     send({ type: 'error', code: 'busy', message: 'Someone else is measuring right now. Try again in a minute.' });
     return ws.close();
   }
-  const sdk = new SmartSpectraSDK({ apiKey: process.env.PRESAGE_API_KEY, requestedMetrics: [...breathingMetrics, ...cardioMetrics] });
+  const sdk = new SmartSpectraSDK({ apiKey: process.env.PRESAGE_API_KEY, // Only what we show. The full cardio bundle also pulls a blood-pressure model whose remote load fails.
+    requestedMetrics: [MetricType.PULSE_RATE, MetricType.BREATHING_RATE] });
   active = sdk;
   const tracker = new MeasurementTracker();
   const startedAt = Date.now();
@@ -82,13 +83,17 @@ async function measure(ws, req) {
     if (active === sdk) active = null;
   }
 
-  sdk.on('metrics', buf => { try { tracker.ingest(decodeMetrics(buf), Date.now()); } catch { /* skip unreadable sample */ } });
+  let metricCount = 0;
+  sdk.on('metrics', buf => {
+    if (++metricCount === 1) console.log(`[presage] first metrics after ${Math.round((Date.now() - startedAt) / 1000)}s`);
+    try { tracker.ingest(decodeMetrics(buf), Date.now()); } catch { /* skip unreadable sample */ }
+  });
   let lastHint = '';
   sdk.on('validationStatus', (_code, _ts, hint) => {
     if (hint && hint !== lastHint) { lastHint = hint; send({ type: 'hint', hint }); }
   });
   sdk.on('error', (code, message, retryable) => {
-    console.error(`[presage] error code=${code} retryable=${retryable} frames=${frames}: ${message}`);
+    console.error(`[presage] error code=${code} retryable=${retryable} frames=${frames} metrics=${metricCount}: ${message}`);
     finish(`Measurement failed: ${message}`);
   });
   const tick = setInterval(() => {
