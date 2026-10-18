@@ -47,7 +47,7 @@ class BackendClient {
       purpose: 'presage_capture', user_id: randomUUID(), expires_at: Math.floor(Date.now() / 1000) + 300,
     })).toString('base64url');
     return { capture_token: `${payload}.${createHmac('sha256', this.secret).update(payload).digest('hex')}`,
-      notice: "Signed in to Maya's synthetic demo account." };
+      notice: "Signed in to Barbara's synthetic demo account." };
   }
 
   async saveCheckin(token, consent) {

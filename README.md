@@ -28,13 +28,13 @@ cd frontend && npm install && npm run dev   # http://localhost:3000
 ```bash
 docker compose up -d db                       # Postgres/TimescaleDB on :5432
 cd backend && alembic upgrade head            # creates all tables
-python -m scripts.reset_demo                  # Maya, 52, Birmingham, type 2 diabetes, Metformin + weekly Semaglutide + Paracetamol
+python -m scripts.reset_demo                  # Barbara, 52, Birmingham, type 2 diabetes, Metformin + weekly Semaglutide + Paracetamol
 uvicorn app.main:app --port 8000              # set GEMINI_API_KEY and GEMINI_MODEL in backend/.env
 cd ../frontend && npm run dev                 # http://localhost:3000 -> "Try the demo account"
 ```
 - Use `GEMINI_MODEL=gemini-3.5-flash-lite`: in testing it answered in about 5 s, while `gemini-3.1-flash-lite` swung from 3 to 30+ s.
 - Before recording, open trial NCT06897475 (Birmingham) once so its explanation is cached, then `reset_demo` for a clean start.
-- Demo story and narration: [`docs/demo-script.md`](docs/demo-script.md). Scan `demo-assets/insulin-box-with-pharmacy-label.jpg` (synthetic pharmacy label) when Maya's GP prescribes insulin.
+- Demo story and narration: [`docs/demo-script.md`](docs/demo-script.md). Scan `demo-assets/insulin-box-with-pharmacy-label.jpg` (synthetic pharmacy label) when Barbara's GP prescribes insulin.
 - If port 8000 is taken, run the backend on another port and start the frontend with `NEXT_PUBLIC_API_URL=http://localhost:<port>`.
 
 ## The phone app (iOS / Android)
@@ -49,7 +49,7 @@ cd frontend && npx cap sync ios && npx cap open ios     # Xcode: pick an iPhone 
 - A fully bundled build (no server) is opt-in with `npm run build:static`; dynamic trial pages need more work before that's usable.
 
 ## Presage check-in (real measurement)
-The phone app and simulator can't run Presage, so measurements come from a small desktop app that uses Presage's official SDK on your Mac's webcam and saves the result to Maya's account.
+The phone app and simulator can't run Presage, so measurements come from a small desktop app that uses Presage's official SDK on your Mac's webcam and saves the result to Barbara's account.
 ```bash
 cd integrations/presage-desktop
 npm install                       # first time only
@@ -57,7 +57,7 @@ npm install                       # first time only
 # CAREFLOW_BACKEND_URL=http://127.0.0.1:8000 (or 8010 if that's where the backend runs)
 npm start
 ```
-Click **Connect**, tick camera consent, **Start camera measurement**, sit still for 30–60 s, then tick save consent and **Save**. The reading appears in Maya's diary, and the trial agent receives it as a low-trust check-in.
+Click **Connect**, tick camera consent, **Start camera measurement**, sit still for 30–60 s, then tick save consent and **Save**. The reading appears in Barbara's diary, and the trial agent receives it as a low-trust check-in.
 
 ## Integration status (keep honest!)
 | Integration | Status | Notes |

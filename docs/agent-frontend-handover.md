@@ -84,4 +84,4 @@ After `POST /api/health-checkins` succeeds, call `GET /api/agent/updates`:
 - The "Read aloud" button (ElevenLabs is no longer used).
 
 ## Demo
-The full story and narration are in `docs/demo-script.md` (trial NCT06897475, Maya in Birmingham, insulin box scan, one-tap "I'm not taking …", Stop taking).
+The full story and narration are in `docs/demo-script.md` (trial NCT06897475, Barbara in Birmingham, insulin box scan, one-tap "I'm not taking …", Stop taking).

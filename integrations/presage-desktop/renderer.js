@@ -95,7 +95,7 @@ byId('connect-demo').addEventListener('click', async () => {
     const session = await window.careflowCapture.connectDemo();
     byId('capture-token').value = session.capture_token;
     demoConnected = true;
-    byId('connection').textContent = 'Connected to Maya’s shared synthetic demo account. Capture token is valid for 5 minutes. Camera is still off.';
+    byId('connection').textContent = 'Connected to Barbara’s shared synthetic demo account. Capture token is valid for 5 minutes. Camera is still off.';
   } catch (error) {
     demoConnected = false;
     byId('connection').textContent = error.message || 'Could not connect the demo account.';

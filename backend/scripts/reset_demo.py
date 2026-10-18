@@ -1,8 +1,8 @@
 """Reset the synthetic demo account to the start of the demo story (run before recording).
 Usage (from backend/):  python -m scripts.reset_demo
-Only touches maya.demo@example.com. Everything here is synthetic.
+Only touches barbara.demo@example.com. Everything here is synthetic.
 
-Maya, 52, primary school teacher in Birmingham, type 2 diabetes for 3 years:
+Barbara, 52, primary school teacher in Birmingham, type 2 diabetes for 3 years:
   - Metformin 500 mg twice a day for the past week (one missed dose), so the calendar and adherence have history
   - Semaglutide 1 mg injection once a week on Sundays (weekly schedule; the demo trial needs a stable dose)
   - Paracetamol 500 mg when needed, one dose logged two days ago (as-needed logging)
@@ -22,7 +22,7 @@ from app.models.patient import PatientProfile
 from app.models.user import User
 from app.services.scheduling.generator import generate_dose_times, schedule_kwargs
 
-DEMO_EMAIL = "maya.demo@example.com"
+DEMO_EMAIL = "barbara.demo@example.com"
 TZ = "Europe/London"
 
 
@@ -48,7 +48,7 @@ def main():
         user = User(email=DEMO_EMAIL)
         db.add(user)
         db.flush()
-        db.add(PatientProfile(user_id=user.id, display_name="Maya", age=52, conditions=["Type 2 diabetes"],
+        db.add(PatientProfile(user_id=user.id, display_name="Barbara", age=52, conditions=["Type 2 diabetes"],
                               location="Birmingham, UK", preferred_language="en"))
 
         now = datetime.now(timezone.utc)
@@ -74,7 +74,7 @@ def main():
         db.add(HealthCheckin(user_id=user.id, measurement_source="none", recorded_at=now - timedelta(days=1),
                              symptom_report="Feeling: Okay\nA bit tired after school; sugar was high this morning."))
         db.commit()
-        print(f"Demo account reset: {DEMO_EMAIL} (Maya, 52, Birmingham, type 2 diabetes; Metformin, Semaglutide, "
+        print(f"Demo account reset: {DEMO_EMAIL} (Barbara, 52, Birmingham, type 2 diabetes; Metformin, Semaglutide, "
               f"Paracetamol; {len(past)} past doses logged).")
     finally:
         db.close()

@@ -9,7 +9,7 @@ export function ProductPreview() {
       <div aria-hidden="true" className="absolute inset-0 rounded-[28px] bg-violet md:-inset-6" />
       <div className="relative flex flex-col gap-3">
         <div className="pz-card shadow-card">
-          <p className="text-label text-ink-muted">Good morning, Maya</p>
+          <p className="text-label text-ink-muted">Good morning, Barbara</p>
           <div className="pz-dose">
             <span className="pz-dose__time">09:00</span>
             <div className="pz-dose__main"><p className="pz-dose__name">Beclometasone 100 mcg</p><p className="pz-dose__how">2 puffs, morning and night</p></div>

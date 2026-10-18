@@ -58,7 +58,7 @@ function seed(): DB {
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0); // leave today's doses for the user to log
   doses.forEach((d, i) => { if (new Date(d.scheduled_at).getTime() < startOfToday.getTime()) { d.status = i === 2 ? "MISSED" : "TAKEN"; d.confirmed_at = d.status === "TAKEN" ? d.scheduled_at : null; } });
   return {
-    profile: { id: "p-1", user_id: "u-1", display_name: "Maya", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
+    profile: { id: "p-1", user_id: "u-1", display_name: "Barbara", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
       date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 },
     meds: [med, med2, med3, med4, med5], doses, bookmarks: [],
     demo: { stoppedInsulin: false, seen: false, changedAt: new Date().toISOString() },
@@ -145,7 +145,7 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
   const body = typeof init.body === "string" ? JSON.parse(init.body) : undefined;
   const now = new Date();
 
-  if (route === "/auth/session") return { authenticated: true, email: "maya.preview@example.com", demo_mode: true };
+  if (route === "/auth/session") return { authenticated: true, email: "barbara.preview@example.com", demo_mode: true };
   if (route === "/auth/logout") { setPreview(false); return { status: "ok" }; }
   if (route.startsWith("/auth/")) return { status: "ok" };
 
