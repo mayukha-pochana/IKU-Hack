@@ -294,3 +294,20 @@ def test_correction_still_applies_when_gemini_is_down(world):
     _, c = conclusion(world.client)
     assert c["status"] == "POTENTIAL_MATCH" and c["provisional"] is True
     assert "counts in your favour" in c["reason"] and "double-check the rest shortly" in c["reason"]
+
+
+def test_brand_names_still_link_to_the_rule_they_break():
+    """A scanned box gives "Toujeo SoloStar (Insulin Glargine)"; the trial rule only says "insulin"."""
+    from types import SimpleNamespace as NS
+    from app.schemas.trials import CriterionAssessment
+    from app.services.agent.engine import apply_known_facts, fix_options, mentions
+    brand = "Toujeo SoloStar (Insulin Glargine)"
+    assert mentions(brand, "you cannot be taking insulin") and not mentions(brand, "solution for injection")
+    rule = dict(kind="exclusion", original_text="Use of insulin within 3 months", plain_text="You cannot be taking insulin",
+                applies_to_patient="YES", evidence=brand, evidence_source="medication", question_for_coordinator=None,
+                effect="conflicts", quote_verified=True, note=None)
+    record = {"confirmed_medications": [{"name": "Metformin"}, {"name": brand}], "medications_patient_says_stopped": [],
+              "conditions": ["Type 2 diabetes"]}
+    assert fix_options(NS(criteria=[rule]), record)[0]["label"] == f"I stopped taking {brand}"
+    stopped = {"confirmed_medications": [{"name": "Metformin"}], "medications_patient_says_stopped": [brand]}
+    assert apply_known_facts([CriterionAssessment(**rule)], stopped)[0].effect == "supports"
