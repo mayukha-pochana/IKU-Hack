@@ -1,7 +1,7 @@
 // OWNER: Member 2 - Gemini trial explanation (POST /trials/{nct_id}/explain). Pre-screen only, never an eligibility decision.
 import Link from "next/link";
 import { CircleHelp, UserRound } from "lucide-react";
-import type { CriterionAssessment, CriterionEffect, TrialExplanation as Explanation } from "@/types";
+import type { CriterionAssessment, CriterionEffect, EvidenceSource, TrialExplanation as Explanation } from "@/types";
 import { Badge, Notice } from "@/components/ui/pz";
 
 /** supports = success, conflicts = danger, unknown = warning. Badge always pairs an icon with the word. */
@@ -9,6 +9,16 @@ export const EFFECT_LABEL: Record<CriterionEffect, { tone: "success" | "danger" 
   supports: { tone: "success", label: "In your favour" },
   conflicts: { tone: "danger", label: "May not fit you" },
   unknown: { tone: "warning", label: "Not known yet" },
+};
+
+/** Where the evidence for a criterion came from, in the patient's words. */
+export const EVIDENCE_LABEL: Record<EvidenceSource, string> = {
+  profile: "From your profile",
+  medication: "From your medication list",
+  patient_correction: "From what you told us",
+  patient_note: "From your note",
+  sensor_reading: "From your check-in (camera estimate)",
+  none: "From your profile",
 };
 
 export const KIND_HEADING: Record<CriterionAssessment["kind"], string> = {
@@ -33,7 +43,8 @@ function Criterion({ c }: { c: CriterionAssessment }) {
         <p className="min-w-0 flex-1 text-body-lg">{c.plain_text}</p>
         <Badge tone={e.tone}>{e.label}</Badge>
       </div>
-      {c.evidence && <p className="text-caption text-ink-muted">From your profile: {c.evidence}</p>}
+      {c.evidence && <p className="text-caption text-ink-muted">{EVIDENCE_LABEL[c.evidence_source ?? "profile"]}: {c.evidence}</p>}
+      {c.note && <p className="text-caption text-ink-muted">{c.note}</p>}
       <details>
         <summary className="pz-link cursor-pointer text-caption">Original wording</summary>
         <p className="mt-1 whitespace-pre-wrap text-caption text-ink-muted">{c.original_text}</p>

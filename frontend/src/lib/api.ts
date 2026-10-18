@@ -75,16 +75,15 @@ export const trials = {
   bookmarks: () => req<{ nct_id: string; created_at: string }[]>("/trials/bookmarks"),
 };
 
-// ---- Check-ins & voice ----
+// ---- Check-ins ----
 export const checkins = {
   list: () => req<T.Checkin[]>("/health-checkins"),
   create: (c: T.CheckinCreate) => req<T.Checkin>("/health-checkins", json("POST", c)),
 };
-export const voice = {
-  explain: async (body: T.VoiceExplain): Promise<Blob> => {
-    if (isPreview()) await fromPreview("/voice/explain", { method: "POST" });
-    const r = await fetch(`${BASE}/api/voice/explain`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!r.ok) throw new ApiError("voice_failed", "Voice unavailable", r.status);
-    return r.blob();
-  },
+
+// ---- Trial updates (CareFlow keeps opened trials up to date; see docs/agent-frontend-handover.md) ----
+export const updates = {
+  list: () => req<T.UpdatesResponse>("/agent/updates"),
+  markSeen: (nctIds?: string[]) => req<void>("/agent/updates/seen", json("POST", { nct_ids: nctIds ?? null })),
+  correct: (c: T.Correction) => req<unknown>("/agent/corrections", json("POST", c)),
 };

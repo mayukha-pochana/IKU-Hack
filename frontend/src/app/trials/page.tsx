@@ -40,7 +40,8 @@ export default function TrialsPage() {
   const statuses = VIEWS.find((v) => v.value === view)!.statuses;
   const phasesOf = (x: TrialMatch) => (x.trial.phases.length ? x.trial.phases.map(phaseLabel) : ["No phase"]);
   const paidOk = (x: TrialMatch) => !paidOnly || isPaid(x.trial);
-  const inView = (m ?? []).filter((x) => statuses.includes(x.status) && paidOk(x));
+  // A trial that just changed stays visible even if its status is filtered out, so the patient can see why.
+  const inView = (m ?? []).filter((x) => (statuses.includes(x.status) || !!x.update?.is_new) && paidOk(x));
   const viewCount = (v: (typeof VIEWS)[number]) => (m ?? []).filter((x) => v.statuses.includes(x.status) && paidOk(x) && (phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))).length;
   const paidCount = (m ?? []).filter((x) => statuses.includes(x.status) && isPaid(x.trial) && (phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))).length;
   const phaseCount = (p: string) => inView.filter((x) => phasesOf(x).includes(p)).length;

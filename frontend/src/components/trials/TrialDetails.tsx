@@ -2,12 +2,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Activity, PoundSterling, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
-import { trials } from "@/lib/api";
-import type { Trial, TrialExplanation, TrialMatch } from "@/types";
+import { ApiError, trials, updates } from "@/lib/api";
+import type { Trial, TrialExplanation, TrialMatch, TrialUpdate } from "@/types";
 import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
 import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
+import { FixIt, UpdateDetails } from "./TrialUpdate";
 import { paymentNote } from "@/lib/payment";
 
 function List({ items, icon: I, tone }: { items: string[]; icon: typeof Check; tone: string }) {
@@ -26,6 +27,12 @@ function Fact({ icon: I, label, children }: { icon: typeof Check; label: string;
   );
 }
 
+const UNAVAILABLE = "Plain-English explanations aren't available right now. The trial's own details are below.";
+function explainError(e: unknown) {
+  if (e instanceof ApiError && e.code === "gemini_not_configured") return UNAVAILABLE;
+  return "We couldn't explain this trial just now. Try again in a moment.";
+}
+
 export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialMatch }) {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -33,17 +40,29 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
   // Gemini explanation; on any error we keep the match-based view below.
   const [explanation, setExplanation] = useState<TrialExplanation | null>(null);
   const [explaining, setExplaining] = useState(true);
+  const [explainErr, setExplainErr] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const uk = t.locations.filter((l) => l.country === "United Kingdom");
   const places = (uk.length ? uk : t.locations).slice(0, 8);
 
   useEffect(() => {
     let live = true;
-    setExplanation(null); setExplaining(true);
-    trials.explain(t.nct_id).then((x) => { if (live) setExplanation(x); }).catch(() => {}).finally(() => { if (live) setExplaining(false); });
+    setExplanation(null); setExplaining(true); setExplainErr(null);
+    trials.explain(t.nct_id).then((x) => { if (live) setExplanation(x); })
+      .catch((e) => { if (live) setExplainErr(explainError(e)); })
+      .finally(() => { if (live) setExplaining(false); });
     return () => { live = false; };
-  }, [t.nct_id]);
+  }, [t.nct_id, attempt]);
   const x = explanation;
-  const status = x?.status ?? match?.status;
+  // CareFlow's latest update for this trial; opening the page counts as seeing it.
+  const [update, setUpdate] = useState<TrialUpdate | null>(null);
+  useEffect(() => {
+    if (!explanation) return; // keep the current update on screen while a fresh explanation loads
+    const u = explanation.update ?? null;
+    setUpdate(u);
+    if (u?.is_new) updates.markSeen([t.nct_id]).catch(() => {});
+  }, [explanation, t.nct_id]);
+  const status = update?.status ?? x?.status ?? match?.status;
   const summary = x?.plain_summary ?? match?.plain_language_summary ?? null;
 
   async function bookmark() {
@@ -76,7 +95,22 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
 
       <Notice>This is a preliminary match, not a confirmation of eligibility. The trial team makes the final decision.</Notice>
 
+      {update && (
+        <section className="pz-card" aria-labelledby="update-h">
+          <h2 id="update-h" className="pz-card__title">Latest update</h2>
+          <UpdateDetails update={update} />
+          <FixIt nctId={t.nct_id} update={update} onUpdated={(next) => { if (next) setUpdate({ ...next, is_new: false }); setAttempt((n) => n + 1); }} />
+        </section>
+      )}
+
       {explaining && <Loader label="Explaining this trial…" />}
+
+      {!explaining && explainErr && (
+        <Notice tone="warning">
+          <p>{explainErr}</p>
+          {explainErr !== UNAVAILABLE && <button type="button" className="pz-btn pz-btn--secondary pz-btn--sm mt-2" onClick={() => setAttempt((n) => n + 1)}>Try again</button>}
+        </Notice>
+      )}
 
       {!explaining && (summary || t.brief_summary) && (
         <section className="pz-card"><h2 className="pz-card__title">What this trial is about</h2>

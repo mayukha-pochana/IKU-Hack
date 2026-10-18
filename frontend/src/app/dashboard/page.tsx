@@ -10,6 +10,7 @@ import { AdherenceSummary } from "@/components/dashboard/AdherenceSummary";
 import { nextDose } from "@/components/medications/DoseList";
 import { MedicationCalendar } from "@/components/medications/MedicationCalendar";
 import { TrialMatchCard } from "@/components/trials/TrialMatchCard";
+import { TrialsChangedNotice } from "@/components/trials/TrialUpdate";
 import { saveMatches } from "@/components/trials/matchCache";
 import { Loader, Notice } from "@/components/ui/pz";
 import { ClinicalTrialInfo } from "@/components/ui/InfoTip";
@@ -50,6 +51,8 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      <TrialsChangedNotice />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-8">

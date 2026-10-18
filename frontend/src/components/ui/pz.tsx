@@ -34,10 +34,11 @@ export function Badge({ tone, children, icon = true }: { tone: Tone; children: R
   return <span className={`pz-badge pz-badge--${tone}`}>{icon && <I aria-hidden="true" strokeWidth={2.5} />}{children}</span>;
 }
 
+// Same words the backend sends as update.label, so badges read the same everywhere.
 export const MATCH_LABEL: Record<MatchStatus, { tone: Tone; label: string }> = {
-  POTENTIAL_MATCH: { tone: "success", label: "Possible match" },
-  MORE_INFORMATION_NEEDED: { tone: "warning", label: "Needs more info" },
-  KNOWN_CRITERIA_MISMATCH: { tone: "danger", label: "Not a match" },
+  POTENTIAL_MATCH: { tone: "success", label: "Could be a fit" },
+  MORE_INFORMATION_NEEDED: { tone: "warning", label: "We need to check" },
+  KNOWN_CRITERIA_MISMATCH: { tone: "danger", label: "Not a fit right now" },
 };
 
 export function MatchBadge({ status }: { status: MatchStatus }) {
