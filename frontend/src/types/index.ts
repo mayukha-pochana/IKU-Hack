@@ -36,18 +36,35 @@ export interface TrialMatch {
   trial: Trial; status: MatchStatus; why_surfaced: string[]; relevant_criteria: string[];
   missing_information: string[]; needs_coordinator_confirmation: string[];
   plain_language_summary: string | null; disclaimer: string;
+  update?: TrialUpdate | null; // present once the patient has opened this trial's explanation
 }
+// Trial updates: CareFlow re-checks trials the patient has opened when something about them changes.
+export interface FixOption { label: string; facts: { type: string; value: string }[] }
+export interface TrialUpdate {
+  status: MatchStatus; label: string; previous_status: MatchStatus | null; previous_label: string | null;
+  reason: string; changed_at: string | null; is_new: boolean; provisional: boolean; fix_options: FixOption[];
+}
+export interface TrialUpdateItem extends TrialUpdate { nct_id: string; title: string }
+export interface UpdatesResponse {
+  new_count: number; updates: TrialUpdateItem[];
+  // What was just handled (e.g. the check-in you saved) and which trials it changed.
+  handled_events?: { kind: string; summary: string; changes: { nct_id: string; title: string }[] }[];
+}
+export type Correction = FixOption | { text: string };
 // POST /trials/{nct_id}/explain (Gemini). `effect` is derived by the backend, never an eligibility decision.
 export type CriterionEffect = "supports" | "conflicts" | "unknown";
 export interface CriterionAssessment {
   kind: "inclusion" | "exclusion"; original_text: string; plain_text: string;
   applies_to_patient: "YES" | "NO" | "UNKNOWN"; evidence: string | null; question_for_coordinator: string | null;
   effect: CriterionEffect; quote_verified: boolean;
+  evidence_source?: EvidenceSource; note?: string | null;
 }
+export type EvidenceSource = "profile" | "medication" | "patient_correction" | "patient_note" | "sensor_reading" | "none";
 export interface TrialExplanation {
   nct_id: string; title: string; url: string; status: MatchStatus; plain_summary: string;
   criteria: CriterionAssessment[]; questions_to_ask: string[]; missing_profile_fields: string[];
   why_surfaced: string[]; disclaimer: string;
+  conflicts?: { topic: string; kept: string; overridden: string; rule: string }[]; update?: TrialUpdate | null;
 }
 export interface AdherenceSummary {
   scheduled_doses: number; reported_taken: number; reported_missed: number;
@@ -66,4 +83,3 @@ export interface CheckinCreate {
   heart_rate: number | null; breathing_rate: number | null; symptom_report: string | null;
   measurement_source: "presage_sdk" | "none"; consent_given: boolean;
 }
-export interface VoiceExplain { kind: "medication" | "schedule" | "trial"; medication_id?: string; nct_id?: string; language?: string }

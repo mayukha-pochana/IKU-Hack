@@ -1,7 +1,6 @@
-// OWNER: Member 2 - one confirmed medication, with ElevenLabs read-aloud of its confirmed instructions.
+// OWNER: Member 2 - one confirmed medication and its confirmed schedule.
 import { Pill } from "lucide-react";
 import type { Medication } from "@/types";
-import { ReadAloud } from "@/components/ui/ReadAloud";
 
 export function MedicationCard({ med }: { med: Medication }) {
   const s = med.confirmed_schedule;
@@ -15,7 +14,6 @@ export function MedicationCard({ med }: { med: Medication }) {
             {med.instructions && <p className="text-body-lg">{med.instructions}</p>}
           </div>
         </div>
-        <ReadAloud request={{ kind: "medication", medication_id: med.id }} label={`Read ${med.name} instructions aloud`} />
       </div>
       <div className="pz-card__row">
         {s.times.map((t) => <span key={t} className="pz-badge pz-badge--neutral">{t}</span>)}

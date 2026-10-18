@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PresageCameraCheckIn } from "@/components/biometrics/PresageCameraCheckIn";
 import { HealthHistory } from "@/components/dashboard/HealthHistory";
+import { CheckinOutcome } from "@/components/trials/TrialUpdate";
 
 export default function CheckInPage() {
   const [tick, setTick] = useState(0);
@@ -14,6 +15,7 @@ export default function CheckInPage() {
         <p className="text-ink-muted">A quick note on how you feel each day. Add heart rate and breathing from Presage if you like. For your records only.</p>
       </header>
       <PresageCameraCheckIn onSaved={() => setTick((t) => t + 1)} />
+      <CheckinOutcome refreshKey={tick} />
       <section aria-labelledby="hist-h" className="flex flex-col gap-3">
         <h2 id="hist-h" className="text-h2">Past entries</h2>
         <HealthHistory refreshKey={tick} />

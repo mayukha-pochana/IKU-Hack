@@ -1,9 +1,11 @@
 // OWNER: Member 2 - one trial in a list (design system: TrialCard). Never claims eligibility.
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import { CircleDot, CircleOff, MapPin } from "lucide-react";
-import type { Trial, TrialMatch } from "@/types";
+import type { Trial, TrialMatch, TrialUpdate } from "@/types";
 import { MatchBadge } from "@/components/ui/pz";
-import { ReadAloud } from "@/components/ui/ReadAloud";
+import { FixIt, UpdateDetails } from "./TrialUpdate";
 
 /** ClinicalTrials.gov phase codes in plain English: EARLY_PHASE1, PHASE1..PHASE4, NA. */
 export function phaseLabel(p: string) {
@@ -41,20 +43,24 @@ export function trialPlace(t: Trial) {
 export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; trial?: Trial }) {
   const t = match?.trial ?? bare!;
   const place = trialPlace(t);
+  // A trial the patient has opened carries CareFlow's latest update; a fix updates this card in place.
+  const [update, setUpdate] = useState<TrialUpdate | null | undefined>(match?.update);
+  const status = update?.status ?? match?.status;
   return (
     <article className="pz-card">
       <div className="pz-card__row">
-        {match ? <MatchBadge status={match.status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
+        {status ? <MatchBadge status={status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
         {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
         <TrialStatusBadge status={t.status} />
       </div>
       <h3 className="pz-card__title">{t.title}</h3>
       {place && <p className="pz-card__meta inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</p>}
-      {match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
+      {update && <UpdateDetails update={update} />}
+      {update && <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />}
+      {!update && match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
       {!match && t.brief_summary && <p className="pz-card__body line-clamp-3 text-ink-muted">{t.brief_summary}</p>}
       <div className="pz-card__actions">
         <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</Link>
-        <ReadAloud small request={{ kind: "trial", nct_id: t.nct_id }} label={`Read ${t.nct_id} summary aloud`} />
       </div>
       {match && <p className="text-caption text-ink-muted">{match.disclaimer}</p>}
     </article>

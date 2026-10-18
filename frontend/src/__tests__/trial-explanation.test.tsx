@@ -41,3 +41,15 @@ describe("ExplanationCriteria", () => {
     expect(container.textContent).not.toMatch(/eligible|study/i);
   });
 });
+
+describe("criterion evidence", () => {
+  it("names where the evidence came from and shows the sensor note", () => {
+    const sensor: CriterionAssessment = { ...c("exclusion", "Resting heart rate above 100", "unknown"), evidence: "heart rate 104", evidence_source: "sensor_reading",
+      note: "Based only on a contactless sensor estimate; confirm with the study team." };
+    const med: CriterionAssessment = { ...c("exclusion", "Taking insulin", "conflicts"), evidence: "Insulin 10 units", evidence_source: "medication" };
+    render(<ExplanationCriteria criteria={[sensor, med]} />);
+    expect(screen.getByText("From your check-in (camera estimate): heart rate 104")).toBeTruthy();
+    expect(screen.getByText("From your medication list: Insulin 10 units")).toBeTruthy();
+    expect(screen.getByText(/contactless sensor estimate/)).toBeTruthy();
+  });
+});

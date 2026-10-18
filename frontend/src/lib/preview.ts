@@ -2,7 +2,7 @@
 // - Only available when NODE_ENV === "development" (never in a production build).
 // - Every screen shows a "Preview mode · sample data" banner while it is on.
 // - Data lives in memory in this browser tab; nothing reaches the server or the database.
-// This is not a substitute for the real integrations (Gemini, ClinicalTrials.gov, Presage, ElevenLabs).
+// This is not a substitute for the real integrations (Gemini, ClinicalTrials.gov, Presage).
 import type * as T from "@/types";
 
 const KEY = "pz:preview";
@@ -25,7 +25,8 @@ function at(dayOffset: number, hhmm: string) {
   const d = new Date(); d.setHours(h, m, 0, 0); d.setDate(d.getDate() + dayOffset); return d.toISOString();
 }
 
-type DB = { profile: T.Profile | null; meds: T.Medication[]; doses: (T.Dose & { medication_id: string })[]; checkins: T.Checkin[]; bookmarks: string[] };
+type DB = { profile: T.Profile | null; meds: T.Medication[]; doses: (T.Dose & { medication_id: string })[]; checkins: T.Checkin[]; bookmarks: string[];
+  demo: { stoppedInsulin: boolean; seen: boolean; changedAt: string } };
 let db: DB | null = null;
 
 function makeDoses(m: T.Medication, fromDay: number, everyDays = 1) {
@@ -49,6 +50,7 @@ function seed(): DB {
     profile: { id: "p-1", user_id: "u-1", display_name: "Maya", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
       date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 },
     meds: [med, med2, med3, med4], doses, bookmarks: [],
+    demo: { stoppedInsulin: false, seen: false, changedAt: new Date().toISOString() },
     checkins: [{ id: uid(), heart_rate: null, breathing_rate: null, symptom_report: "Feeling: Okay\nSlightly wheezy after climbing stairs.", measurement_source: "none", recorded_at: at(-1, "08:30") }],
   };
 }
@@ -71,6 +73,29 @@ const MATCHES: T.TrialMatch[] = [
     status: "KNOWN_CRITERIA_MISMATCH", why_surfaced: ["You have asthma"], relevant_criteria: ["Must be aged 50 or over"],
     missing_information: [], needs_coordinator_confirmation: [], plain_language_summary: null, disclaimer: DISCLAIMER },
 ];
+
+// Demo trial for the "trial updates" screens (fixed sample text, not from the backend or Gemini).
+const DEMO_NCT = "NCT07760883";
+const DEMO_MATCH: T.TrialMatch = {
+  trial: { nct_id: DEMO_NCT, title: "Sample trial: metformin effects by gene carrier status", brief_summary: "A sample used to preview how PhaseZero tells you when a trial changes.",
+    status: "RECRUITING", conditions: ["Type 2 Diabetes"], interventions: ["Metformin"], phases: ["PHASE4"],
+    inclusion_criteria: "Adults aged 30 to 70 with type 2 diabetes\nTaking metformin", exclusion_criteria: "Currently taking insulin",
+    min_age: "30 Years", max_age: "70 Years", locations: [{ facility: "Sample Research Unit", city: "London", country: "United Kingdom" }], url: `https://clinicaltrials.gov/study/${DEMO_NCT}` },
+  status: "MORE_INFORMATION_NEEDED", why_surfaced: ["You take metformin"], relevant_criteria: [], missing_information: [], needs_coordinator_confirmation: [],
+  plain_language_summary: null, disclaimer: "Preview sample. Preliminary match only; the trial team decides who can take part.",
+};
+function demoUpdate(d: DB["demo"]): T.TrialUpdate {
+  return d.stoppedInsulin
+    ? { status: "MORE_INFORMATION_NEEDED", label: "We need to check", previous_status: "KNOWN_CRITERIA_MISMATCH", previous_label: "Not a fit right now",
+        reason: "\"You can't be taking insulin\" now counts in your favour (from what you told us). Other requirements still need checking with the study team.",
+        changed_at: d.changedAt, is_new: !d.seen, provisional: false,
+        fix_options: [{ label: "I'm taking Insulin glargine again", facts: [{ type: "medication_taking", value: "Insulin glargine" }] }] }
+    : { status: "KNOWN_CRITERIA_MISMATCH", label: "Not a fit right now", previous_status: "MORE_INFORMATION_NEEDED", previous_label: "We need to check",
+        reason: "\"You can't be taking insulin\" now means this study may not fit you (from Insulin glargine 10 units).",
+        changed_at: d.changedAt, is_new: !d.seen, provisional: false,
+        fix_options: [{ label: "I stopped taking Insulin glargine", facts: [{ type: "medication_stopped", value: "Insulin glargine" }] }] };
+}
+const demoMatch = (s: DB): T.TrialMatch => { const u = demoUpdate(s.demo); return { ...DEMO_MATCH, status: u.status, update: u }; };
 
 // Preview sample, not written by Gemini: fixed text that shows each criterion effect on the explanation screen.
 function explanation(m: T.TrialMatch): T.TrialExplanation {
@@ -154,13 +179,35 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
     });
   }
 
-  if (route === "/trials/matches") return s.profile?.conditions.length ? MATCHES : [];
+  if (route === "/trials/matches") {
+    if (!s.profile?.conditions.length) return [];
+    const order: Record<T.MatchStatus, number> = { POTENTIAL_MATCH: 0, MORE_INFORMATION_NEEDED: 1, KNOWN_CRITERIA_MISMATCH: 2 };
+    return [...MATCHES, demoMatch(s)].sort((a, b) => order[a.status] - order[b.status]);
+  }
+  if (route === "/agent/updates") {
+    const u = demoUpdate(s.demo);
+    return { new_count: u.is_new ? 1 : 0, updates: [{ ...u, nct_id: DEMO_NCT, title: DEMO_MATCH.trial.title }], handled_events: [] };
+  }
+  if (route === "/agent/updates/seen") { s.demo.seen = true; return undefined; }
+  if (route === "/agent/corrections") {
+    const facts: { type: string }[] = body?.facts ?? [];
+    const before = s.demo.stoppedInsulin;
+    if (facts.some((f) => f.type === "medication_stopped")) s.demo.stoppedInsulin = true;
+    if (facts.some((f) => f.type === "medication_taking")) s.demo.stoppedInsulin = false;
+    if (body?.text && /stop/i.test(body.text) && /insulin/i.test(body.text)) s.demo.stoppedInsulin = true;
+    if (before !== s.demo.stoppedInsulin) { s.demo.seen = false; s.demo.changedAt = now.toISOString(); }
+    return { conclusions: [], conflicts: [], handled_events: [] };
+  }
   if (route === "/trials/bookmarks") { if (method === "POST") s.bookmarks.push(body.nct_id); return method === "POST" ? { nct_id: body.nct_id } : s.bookmarks.map((n) => ({ nct_id: n, created_at: now.toISOString() })); }
   if (route === "/trials/search") {
     const q = new URLSearchParams(query).get("q")?.toLowerCase() ?? "";
     return MATCHES.map((m) => m.trial).filter((t) => t.title.toLowerCase().includes(q) || t.conditions.some((c) => c.toLowerCase().includes(q)));
   }
   const explain = route.match(/^\/trials\/(.+)\/explain$/);
+  if (explain && decodeURIComponent(explain[1]) === DEMO_NCT) {
+    const m = demoMatch(s);
+    return { ...explanation(m), update: m.update, plain_summary: "Preview sample: this trial looks at how well metformin works for people with different versions of one gene." };
+  }
   if (explain) {
     const m = MATCHES.find((x) => x.trial.nct_id === decodeURIComponent(explain[1]));
     if (!m) throw new PreviewError("not_found", "Trial not found in preview data.", 404);
@@ -169,7 +216,7 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
     return explanation(m);
   }
   if (route.startsWith("/trials/")) {
-    const t = MATCHES.find((m) => m.trial.nct_id === decodeURIComponent(route.slice(8)))?.trial;
+    const t = [...MATCHES, DEMO_MATCH].find((m) => m.trial.nct_id === decodeURIComponent(route.slice(8)))?.trial;
     if (!t) throw new PreviewError("not_found", "Trial not found in preview data.", 404);
     return t;
   }
@@ -183,7 +230,6 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
     return s.checkins;
   }
 
-  if (route === "/voice/explain") throw new PreviewError("voice_unavailable", "Read aloud needs the backend.", 503);
   throw new PreviewError("not_in_preview", `Preview mode has no sample data for ${route}.`, 404);
 }
 

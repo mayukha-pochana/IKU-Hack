@@ -1,8 +1,8 @@
 // OWNER: Member 1 - accessibility features.
-import { Contrast, Languages, MousePointerClick, Type, Volume2 } from "lucide-react";
+import { BellRing, Contrast, Languages, MousePointerClick, Type } from "lucide-react";
 
 const ITEMS = [
-  { icon: Volume2, title: "Read aloud", body: "Hear your medication instructions and trial explanations in a natural voice, powered by ElevenLabs." },
+  { icon: BellRing, title: "Kept up to date", body: "When something about you changes, PhaseZero re-checks the trials you've looked at and tells you what changed, in one sentence." },
   { icon: Type, title: "Easy-to-read text", body: "Set in Lexend, a typeface designed to reduce reading effort, at 16px or larger." },
   { icon: Languages, title: "Plain English", body: "Medical terms are explained in everyday words. Nothing is hidden behind jargon." },
   { icon: Contrast, title: "Clear contrast", body: "Text meets WCAG AA contrast, and status is always shown with an icon and a word." },

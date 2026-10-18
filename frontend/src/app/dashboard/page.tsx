@@ -10,9 +10,9 @@ import { AdherenceSummary } from "@/components/dashboard/AdherenceSummary";
 import { nextDose } from "@/components/medications/DoseList";
 import { MedicationCalendar } from "@/components/medications/MedicationCalendar";
 import { TrialMatchCard } from "@/components/trials/TrialMatchCard";
+import { TrialsChangedNotice } from "@/components/trials/TrialUpdate";
 import { saveMatches } from "@/components/trials/matchCache";
 import { Loader, Notice } from "@/components/ui/pz";
-import { ReadAloud } from "@/components/ui/ReadAloud";
 import { ClinicalTrialInfo } from "@/components/ui/InfoTip";
 import { dateTimeUK, greeting, time24 } from "@/lib/format";
 
@@ -38,13 +38,12 @@ export default function Dashboard() {
         <p className="text-ink-muted">Here&apos;s your day at a glance.</p>
       </header>
 
+      <TrialsChangedNotice />
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-8">
           <section aria-labelledby="today-h" className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="today-h" className="text-h2">Your medications this week</h2>
-              <ReadAloud request={{ kind: "schedule" }} label="Read today's schedule aloud" />
-            </div>
+            <h2 id="today-h" className="text-h2">Your medications this week</h2>
             <div className="pz-card"><MedicationCalendar showScanLink refreshKey={tick} onDoseChange={() => setTick((t) => t + 1)} /></div>
           </section>
 

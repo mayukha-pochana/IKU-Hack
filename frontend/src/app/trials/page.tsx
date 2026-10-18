@@ -28,9 +28,11 @@ export default function TrialsPage() {
   const phasesOf = (x: TrialMatch) => (x.trial.phases.length ? x.trial.phases.map(phaseLabel) : ["No phase"]);
   // Always list every phase so people see the full range; ones with no matches show (0) and can't be toggled.
   const allPhases = ["Early phase 1", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "No phase"];
-  const phaseCount = (p: string) => (m ?? []).filter((x) => !hide.includes(x.status) && phasesOf(x).includes(p)).length;
+  // A trial that just changed stays visible even if its status is filtered out, so the patient can see why.
+  const visible = (x: TrialMatch) => !hide.includes(x.status) || !!x.update?.is_new;
+  const phaseCount = (p: string) => (m ?? []).filter((x) => visible(x) && phasesOf(x).includes(p)).length;
   const shown = (m ?? [])
-    .filter((x) => !hide.includes(x.status) && phasesOf(x).some((p) => !hidePhase.includes(p)))
+    .filter((x) => visible(x) && phasesOf(x).some((p) => !hidePhase.includes(p)))
     .sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
 
   return (
