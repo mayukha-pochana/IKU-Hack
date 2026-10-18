@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { Chip, TextField } from "@/components/ui/pz";
 import { recognise, searchConditions } from "@/lib/conditions";
-import { COMMON_CONDITIONS, LANGUAGES, PREGNANT_OPTIONS, SEX_OPTIONS, SMOKING_OPTIONS, TRAVEL_OPTIONS, ageFromDob, type Draft } from "./profileDraft";
+import { COMMON_CONDITIONS, PREGNANT_OPTIONS, SEX_OPTIONS, SMOKING_OPTIONS, ageFromDob, type Draft } from "./profileDraft";
 
 type P = { d: Draft; set: (d: Draft) => void; errors?: Partial<Record<keyof Draft, string | null>> };
 
@@ -31,13 +31,27 @@ export function AboutFields({ d, set, errors }: P) {
   const age = d.dob ? ageFromDob(d.dob) : null;
   return (
     <div className="flex flex-col gap-5">
-      <TextField id="display_name" label="Your first name" autoComplete="given-name" required wide value={d.display_name}
-        onChange={(e) => set({ ...d, display_name: e.target.value })} error={errors?.display_name} help="This is how we'll greet you." />
-      <TextField id="dob" label="Date of birth" type="date" autoComplete="bday" max={today} min="1900-01-01" className="max-w-[240px]" value={d.dob}
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField id="display_name" label="First name" autoComplete="given-name" required value={d.display_name}
+          onChange={(e) => set({ ...d, display_name: e.target.value })} error={errors?.display_name} help="This is how we'll greet you." />
+        <TextField id="last_name" label="Last name" autoComplete="family-name" value={d.last_name}
+          onChange={(e) => set({ ...d, last_name: e.target.value })} help="Optional." />
+      </div>
+      <TextField id="dob" label="Date of birth" type="date" autoComplete="bday" max={today} min="1900-01-01" className="pz-field--center max-w-[240px]" value={d.dob}
         onChange={(e) => set({ ...d, dob: e.target.value })} error={errors?.dob}
         help={age != null && age >= 0 ? `You're ${age}. Trials set exact age limits, so this matters.` : d.age != null ? `We have your age as ${d.age}. Add your date of birth for more precise matching.` : "Trials set exact age limits, so this helps us check."} />
       <Choice label="Sex assigned at birth" value={d.sex} options={SEX_OPTIONS} onChange={(v) => set({ ...d, sex: v })}
         help="Some trials only recruit one sex, or have different rules for each." />
+    </div>
+  );
+}
+
+export function ContactFields({ d, set, errors, email }: P & { email: string | null }) {
+  return (
+    <div className="flex flex-col gap-5">
+      {email && <TextField id="account_email" label="Email" wide readOnly value={email} help="You sign in with this. To use a different email, sign out and sign in with it." />}
+      <TextField id="phone" label="Phone number" type="tel" inputMode="tel" autoComplete="tel" wide value={d.phone}
+        onChange={(e) => set({ ...d, phone: e.target.value })} error={errors?.phone} help="Optional. Handy to have ready if you contact a trial team." />
     </div>
   );
 }
@@ -102,20 +116,31 @@ export function ConditionFields({ d, set }: P) {
   );
 }
 
+// Drag to set distance: 5 to 100 miles in steps of 5, with "Any distance" past the end (stored as 0).
+const ANY = 105;
+function TravelSlider({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const id = useId();
+  const n = value === "" ? 25 : Number(value) === 0 ? ANY : Number(value);
+  const label = n === ANY ? "Any distance" : `${n} mi`;
+  const pct = ((n - 5) / (ANY - 5)) * 100;
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="pz-field__label">How far would you travel for trial visits?</label>
+      <p className="text-h2 tabular-nums text-violet-text" aria-hidden="true">{value === "" ? "Not set" : label}</p>
+      <input id={id} type="range" min={5} max={ANY} step={5} value={n} className="pz-range" style={{ "--pz-fill": `${pct}%` } as React.CSSProperties}
+        aria-valuetext={n === ANY ? "Any distance" : `Up to ${n} miles`} onChange={(e) => onChange(Number(e.target.value) === ANY ? "0" : e.target.value)} />
+      <div className="flex justify-between text-caption text-ink-muted" aria-hidden="true"><span>5 mi</span><span>Any distance</span></div>
+      <span className="pz-field__help">Drag to set how far. Most trials need regular visits to the hospital or clinic running them.</span>
+    </div>
+  );
+}
+
 export function LocationFields({ d, set }: P) {
   return (
     <div className="flex flex-col gap-5">
       <TextField id="location" label="Town, city or postcode" autoComplete="address-level2" wide value={d.location}
         onChange={(e) => set({ ...d, location: e.target.value })} help="We show trials near you first. For example, London or SE1 9RT." />
-      <Choice label="How far would you travel for trial visits?" value={d.travel as "" | "10" | "25" | "50" | "100" | "0"} options={TRAVEL_OPTIONS as { value: "10" | "25" | "50" | "100" | "0"; label: string }[]}
-        onChange={(v) => set({ ...d, travel: v })} help="Most trials need regular visits to the hospital or clinic running them." />
-      <div className="pz-field pz-field--wide">
-        <label htmlFor="preferred_language" className="pz-field__label">Language for read aloud</label>
-        <select id="preferred_language" className="pz-field__input" value={d.preferred_language} onChange={(e) => set({ ...d, preferred_language: e.target.value })}>
-          {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-        </select>
-        <span className="pz-field__help">Screens stay in English. Spoken explanations use this language where available.</span>
-      </div>
+      <TravelSlider value={d.travel} onChange={(v) => set({ ...d, travel: v })} />
     </div>
   );
 }

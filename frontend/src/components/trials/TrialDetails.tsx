@@ -5,7 +5,6 @@ import { Activity, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, Map
 import { trials } from "@/lib/api";
 import type { Trial, TrialExplanation, TrialMatch } from "@/types";
 import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
-import { ReadAloud } from "@/components/ui/ReadAloud";
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
 import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
@@ -54,19 +53,21 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
   return (
     <article className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <div className="pz-card__row">
+        {/* One compact row of badges; scrolls sideways rather than wrapping on very narrow phones. */}
+        <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {status && <MatchBadge status={status} />}
           {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
-          {t.phases.length > 0 && <PhaseInfo />}
           <TrialStatusBadge status={t.status} />
+          {t.phases.length > 0 && <PhaseInfo />}
+        </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] md:text-h1">{t.title}</h1>
           <span className="text-caption text-ink-muted">{t.nct_id}</span>
         </div>
-        <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] md:text-h1">{t.title}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="pz-btn pz-btn--secondary pz-btn--sm" onClick={bookmark} disabled={busy || saved} aria-busy={busy}>
             {busy ? <Spinner /> : saved ? <BookmarkCheck aria-hidden="true" size={16} /> : <Bookmark aria-hidden="true" size={16} />}{saved ? "Saved" : "Save trial"}
           </button>
-          <ReadAloud request={{ kind: "trial", nct_id: t.nct_id }} label="Read this trial aloud" />
           <a href={t.url} target="_blank" rel="noreferrer" className="pz-btn pz-btn--ghost pz-btn--sm">Official trial page <ExternalLink aria-hidden="true" size={16} /></a>
         </div>
         {err && <Notice tone="danger">{err}</Notice>}

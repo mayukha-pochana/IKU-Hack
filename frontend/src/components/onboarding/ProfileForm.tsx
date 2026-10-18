@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, profile } from "@/lib/api";
-import { Loader, Notice, Spinner, TextField, errorMessage } from "@/components/ui/pz";
-import { AboutFields, ConditionFields, HealthFields, LocationFields } from "./ProfileFields";
-import { EMPTY, fromProfile, toPayload, validateDob, validateName, type Draft } from "./profileDraft";
+import { Loader, Notice, Spinner, errorMessage } from "@/components/ui/pz";
+import { AboutFields, ConditionFields, ContactFields, HealthFields, LocationFields } from "./ProfileFields";
+import { EMPTY, fromProfile, toPayload, validateDob, validateName, validatePhone, type Draft } from "./profileDraft";
 
 export function ProfileForm({ redirectTo }: { redirectTo?: string }) {
   const router = useRouter();
@@ -22,8 +22,8 @@ export function ProfileForm({ redirectTo }: { redirectTo?: string }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); if (!d) return; setMsg(null);
-    const v = { display_name: validateName(d), dob: validateDob(d) };
-    setErrors(v); if (v.display_name || v.dob) return;
+    const v = { display_name: validateName(d), dob: validateDob(d), phone: validatePhone(d) };
+    setErrors(v); if (v.display_name || v.dob || v.phone) return;
     setSaving(true);
     try {
       await profile.put(toPayload(d));
@@ -37,9 +37,9 @@ export function ProfileForm({ redirectTo }: { redirectTo?: string }) {
   return (
     <form onSubmit={submit} className="flex max-w-2xl flex-col gap-6">
       <section className="pz-card"><h2 className="pz-card__title">About you</h2>
-        {email && <TextField id="account_email" label="Email" wide readOnly value={email} help="You sign in with this. To use a different email, sign out and sign in with it." />}
         <AboutFields d={d} set={setD} errors={errors} />
       </section>
+      <section className="pz-card"><h2 className="pz-card__title">Contact details</h2><ContactFields d={d} set={setD} errors={errors} email={email} /></section>
       <section className="pz-card"><h2 className="pz-card__title">Your conditions</h2><ConditionFields d={d} set={setD} /></section>
       <section className="pz-card"><h2 className="pz-card__title">More about your health</h2><HealthFields d={d} set={setD} /></section>
       <section className="pz-card"><h2 className="pz-card__title">Location and travel</h2><LocationFields d={d} set={setD} /></section>

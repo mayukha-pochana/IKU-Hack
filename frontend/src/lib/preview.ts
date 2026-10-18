@@ -36,6 +36,8 @@ function makeDoses(m: T.Medication, fromDay: number, everyDays = 1) {
   return out;
 }
 
+const SAMPLE_DIARY = [["Good", "Breathing felt easy on my walk."], ["Okay", "Slightly wheezy after climbing stairs."], ["Low", "Tired today."], ["Great", ""],
+  ["Good", ""], ["Okay", "Bit of a cough in the evening."], ["Great", "Swam 20 lengths, no wheeze."], ["Unwell", "Cold coming on, stayed in."], ["Good", "Slept well."]] as const;
 function seed(): DB {
   const med: T.Medication = { id: "med-1", name: "Beclometasone", strength: "100 mcg", instructions: "2 puffs, morning and night", frequency: "twice daily", confirmed_schedule: { times: ["09:00", "21:00"], duration_days: 28, timezone: "Europe/London" } };
   const med2: T.Medication = { id: "med-2", name: "Montelukast", strength: "10 mg", instructions: "1 tablet at night", frequency: "once daily", confirmed_schedule: { times: ["21:00"], duration_days: 28, timezone: "Europe/London" } };
@@ -49,7 +51,11 @@ function seed(): DB {
     profile: { id: "p-1", user_id: "u-1", display_name: "Maya", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
       date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 },
     meds: [med, med2, med3, med4], doses, bookmarks: [],
-    checkins: [{ id: uid(), heart_rate: null, breathing_rate: null, symptom_report: "Feeling: Okay\nSlightly wheezy after climbing stairs.", measurement_source: "none", recorded_at: at(-1, "08:30") }],
+    // Sample diary entries over the last six weeks, with a few days skipped (preview only).
+    checkins: Array.from({ length: 42 }, (_, k) => 42 - k).filter((n) => n % 5 !== 2 && n % 7 !== 4).map((n) => {
+      const [mood, note] = SAMPLE_DIARY[n % SAMPLE_DIARY.length];
+      return { id: uid(), heart_rate: null, breathing_rate: null, symptom_report: note ? `Feeling: ${mood}\n${note}` : `Feeling: ${mood}`, measurement_source: "none", recorded_at: at(-n, "08:30") };
+    }),
   };
 }
 const state = () => (db ??= seed());

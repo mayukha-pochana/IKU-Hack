@@ -3,7 +3,6 @@ import Link from "next/link";
 import { CircleDot, CircleOff, MapPin } from "lucide-react";
 import type { Trial, TrialMatch } from "@/types";
 import { MatchBadge } from "@/components/ui/pz";
-import { ReadAloud } from "@/components/ui/ReadAloud";
 
 /** ClinicalTrials.gov phase codes in plain English: EARLY_PHASE1, PHASE1..PHASE4, NA. */
 export function phaseLabel(p: string) {
@@ -43,7 +42,7 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
   const place = trialPlace(t);
   return (
     <article className="pz-card">
-      <div className="pz-card__row">
+      <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {match ? <MatchBadge status={match.status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
         {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
         <TrialStatusBadge status={t.status} />
@@ -54,7 +53,6 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
       {!match && t.brief_summary && <p className="pz-card__body line-clamp-3 text-ink-muted">{t.brief_summary}</p>}
       <div className="pz-card__actions">
         <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</Link>
-        <ReadAloud small request={{ kind: "trial", nct_id: t.nct_id }} label={`Read ${t.nct_id} summary aloud`} />
       </div>
       {match && <p className="text-caption text-ink-muted">{match.disclaimer}</p>}
     </article>
