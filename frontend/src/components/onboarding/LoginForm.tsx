@@ -14,7 +14,8 @@ type Busy = null | "link" | "demo";
 export function LoginForm() {
   // The developer-only preview option is hidden inside the phone app.
   const [inApp, setInApp] = useState(false);
-  useEffect(() => setInApp(isNativeApp()), []);
+  // Also hidden on the public demo link: it's for local development only.
+  useEffect(() => setInApp(isNativeApp() || !["localhost", "127.0.0.1"].includes(location.hostname)), []);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<Busy>(null);
