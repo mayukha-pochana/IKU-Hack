@@ -15,14 +15,11 @@ const MEDICATION_FIX = /^medication_/;
 export function UpdateDetails({ update: u }: { update: TrialUpdate }) {
   return (
     <div className="flex flex-col gap-1">
-      {u.provisional ? (
-        <p className="flex items-start gap-2 text-ink-muted"><Clock aria-hidden="true" size={18} className="mt-0.5 shrink-0" />We&apos;ll double-check this shortly.</p>
-      ) : (
-        <p className="text-body-lg">
-          {u.is_new && <span className="pz-badge pz-badge--neutral mr-2 align-middle"><BellRing aria-hidden="true" strokeWidth={2.5} />Updated today</span>}
-          {u.reason}
-        </p>
-      )}
+      <p className="text-body-lg">
+        {u.is_new && <span className="pz-badge pz-badge--neutral mr-2 align-middle"><BellRing aria-hidden="true" strokeWidth={2.5} />Updated today</span>}
+        {u.reason}
+      </p>
+      {u.provisional && <p className="flex items-start gap-2 text-caption text-ink-muted"><Clock aria-hidden="true" size={16} className="mt-0.5 shrink-0" />We&apos;ll double-check this shortly.</p>}
       {u.previous_label && <p className="text-caption text-ink-muted">Was: {u.previous_label}</p>}
     </div>
   );
@@ -37,8 +34,6 @@ export function FixIt({ nctId, update: u, onUpdated }: { nctId: string; update: 
   const [textErr, setTextErr] = useState<string | null>(null);
   const [done, setDone] = useState<"fixed" | "confirmed" | null>(null);
   const [medicationFix, setMedicationFix] = useState(false);
-
-  if (u.provisional) return null;
 
   async function apply(correction: FixOption | { text: string }, isMedication: boolean) {
     setBusy(true); setErr(null);

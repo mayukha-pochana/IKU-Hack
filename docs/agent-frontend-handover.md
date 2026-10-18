@@ -36,7 +36,7 @@ It appears on a trial once the patient has opened that trial's explanation:
 ```
 
 - `is_new`: the status changed since the patient last looked. Show an "Updated today" chip.
-- `provisional`: Gemini was busy. Show "We'll double-check this shortly" and no fix options. It re-checks itself on the next change.
+- `provisional`: Gemini was busy. The status and reason already reflect what the patient told us; show a small "We'll double-check this shortly" line. It re-checks itself on the next change.
 - `fix_options`: one button each. Send the option object unchanged (see "Not right? Fix it"). There are 0 to 3 options; an undo appears automatically after a fix.
 
 ## Screens

@@ -24,15 +24,29 @@ uvicorn app.main:app --reload --port 8000   # docs at /docs
 cd frontend && npm install && npm run dev   # http://localhost:3000
 ```
 
+## Running the demo (real backend, verified end to end)
+```bash
+docker compose up -d db                       # Postgres/TimescaleDB on :5432
+cd backend && alembic upgrade head            # creates all tables
+python -m scripts.reset_demo                  # Maya, 52, type 2 diabetes, London, taking Metformin
+uvicorn app.main:app --port 8000              # set GEMINI_API_KEY and GEMINI_MODEL in backend/.env
+cd ../frontend && npm run dev                 # http://localhost:3000 -> "Try the demo account"
+```
+- Use `GEMINI_MODEL=gemini-3.5-flash-lite`: in testing it answered in about 5 s, while `gemini-3.1-flash-lite` swung from 3 to 30+ s.
+- Before recording, open trial NCT07760883 once so its explanation is cached, then run `reset_demo` only if you need a clean start.
+- Demo story: open NCT07760883 ("We need to check") → add Insulin glargine on My medications → dashboard "1 trial changed" ("Not a fit right now") → trial page "Not right? Fix it" → "I stopped taking Insulin glargine" → back to "We need to check".
+- If port 8000 is taken, run the backend on another port and start the frontend with `NEXT_PUBLIC_API_URL=http://localhost:<port>`.
+
 ## Integration status (keep honest!)
 | Integration | Status | Notes |
 |---|---|---|
-| Gemini (prescription + trial explanation) | Implemented, live-tested | set `GEMINI_API_KEY`, verify `GEMINI_MODEL`; `POST /api/trials/{nct_id}/explain` |
-| ClinicalTrials.gov v2 | TODO | no key needed; optional cache: `python -m scripts.sync_trials asthma` |
-| Presage SmartSpectra | TODO | see `backend/app/services/presage/README.md` |
-| ElevenLabs | Implemented, mock-tested | set `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`; `POST /api/voice/explain` |
-| Snowflake Cortex Search | Implemented, mock-tested | see [Snowflake](#snowflake-trial-search); unset = existing cache/live search |
-| Tiger Data | TODO | set `DATABASE_URL` |
+| Gemini (prescription + trial explanation) | Live, verified end to end | label reading (1-3 photos), trial explanation and pre-screen; `GEMINI_MODEL=gemini-3.5-flash-lite` |
+| Adaptive agent (incident.io track) | Live, verified end to end | re-checks opened trials when medications, profile, corrections or check-ins change; `/api/agent/*` |
+| ClinicalTrials.gov v2 | Live, verified end to end | search, matches and trial details; optional cache: `python -m scripts.sync_trials asthma` |
+| Presage SmartSpectra | Partial | check-ins with heart and breathing rate are saved and used by the agent as low-trust evidence; see `backend/app/services/presage/README.md` |
+| PostgreSQL / TimescaleDB | Live, verified end to end | local `docker compose up -d db`; Tiger Data cloud works by setting `DATABASE_URL` (not used in testing) |
+| ElevenLabs | Not used | backend code remains; Read aloud removed from the UI |
+| Snowflake Cortex Search | Not used | trial accounts can't use Cortex; code switches on only if `SNOWFLAKE_*` is set |
 | Vultr | OPTIONAL | |
 
 ## Snowflake trial search

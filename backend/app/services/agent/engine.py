@@ -18,7 +18,10 @@ from app.services.trials import clinicaltrials_client as ct
 from app.services.trials import simplify
 
 MAX_WATCHED = 10
-GEMINI_SECONDS = 30
+GEMINI_SECONDS = 50
+# One pass at a time per patient: the dashboard fires several requests at once, and parallel passes over the same
+# events would race (and a timed-out pass could overwrite a good answer).
+_locks: dict = {}
 CONCURRENCY = 3
 # A daily check-in only matters to trials whose criteria mention vital signs.
 VITALS = re.compile(r"heart rate|pulse|beats per minute|\bbpm\b|respirat|breathing rate|oxygen saturation|"
@@ -49,7 +52,7 @@ def explain_change(old_status: str | None, new_status: str, old: list[dict], new
     parts = [r.rstrip(".") for r in deterministic_reasons if "no longer recruiting" in r]
     parts += moved[:2]
     if provisional:
-        parts.append("We'll double-check this shortly; for now it uses the trial's published age and status only")
+        parts.append("We'll double-check the rest shortly")
     if not parts:
         parts = ["Nothing about this trial changed" if old_status == new_status
                  else "Checked again with your latest information"]
@@ -130,6 +133,28 @@ def watch(db: Session, user_id, result: TrialExplanation, record_hash: str) -> N
     db.commit()
 
 
+def apply_known_facts(criteria: list[CriterionAssessment], record: dict) -> list[CriterionAssessment]:
+    """Fallback when Gemini is unavailable: update exclusions that hinged on a medication or condition the patient
+    has since corrected, so the answer follows the correction now; Gemini re-checks everything on the next pass."""
+    first = lambda name: name.split()[0].lower()
+    stopped = [first(m) for m in record.get("medications_patient_says_stopped", [])]
+    stopped += [c.lower() for c in record.get("conditions_ruled_out_by_patient", [])]
+    taking = [first(m["name"]) for m in record.get("confirmed_medications", [])]
+    out = []
+    for c in criteria:
+        text = " ".join(filter(None, (c.evidence, c.original_text, c.plain_text))).lower()
+        if c.kind == "exclusion" and c.effect == "conflicts" and any(w in text for w in stopped) \
+                and not any(w in text for w in taking):
+            c = c.model_copy(update={"applies_to_patient": "NO", "effect": "supports", "evidence_source": "patient_correction",
+                                     "evidence": "you told us you stopped", "note": "Updated from what you told us."})
+        elif c.kind == "exclusion" and c.effect == "supports" and c.evidence_source == "patient_correction" \
+                and any(w in text for w in taking):
+            c = c.model_copy(update={"applies_to_patient": "YES", "effect": "conflicts", "evidence_source": "medication",
+                                     "evidence": "your medication list", "note": None})
+        out.append(c)
+    return out
+
+
 async def _rescreen(row: TrialConclusion, profile, record: dict, record_hash: str):
     """Returns (status, criteria dumps, deterministic reasons, provisional) for one watched trial."""
     trial = await ct.get_trial(row.nct_id)            # live registry: picks up status changes
@@ -137,11 +162,11 @@ async def _rescreen(row: TrialConclusion, profile, record: dict, record_hash: st
     criteria_text = simplify._criteria_text(trial)
     try:
         generated = await asyncio.wait_for(simplify.screen(trial, record, record_hash), GEMINI_SECONDS)
-        criteria = [simplify.assess(c, criteria_text) for c in generated.criteria]
+        criteria = [simplify.check_age(simplify.assess(c, criteria_text), record.get("age")) for c in generated.criteria]
         provisional = False
     except (AppError, asyncio.TimeoutError):
-        # Do not stall: keep the previous criteria and commit to the best deterministic answer.
-        criteria = [CriterionAssessment.model_validate(c) for c in row.criteria]
+        # Do not stall: keep the previous criteria, apply what the patient just told us, and commit to an answer.
+        criteria = apply_known_facts([CriterionAssessment.model_validate(c) for c in row.criteria], record)
         provisional = True
     status = simplify.roll_up(criteria, deterministic).value
     return status, [c.model_dump() for c in criteria], reasons, provisional
@@ -149,6 +174,12 @@ async def _rescreen(row: TrialConclusion, profile, record: dict, record_hash: st
 
 async def process(db: Session, user_id) -> list[AgentEvent]:
     """Handle every pending event in one pass and record what changed. Returns the events handled."""
+    async with _locks.setdefault(user_id, asyncio.Lock()):
+        db.expire_all()   # see what a pass that just finished in another request committed
+        return await _process(db, user_id)
+
+
+async def _process(db: Session, user_id) -> list[AgentEvent]:
     pending = list(db.scalars(select(AgentEvent).where(AgentEvent.user_id == user_id,
                                                        AgentEvent.processed_at.is_(None))
                               .order_by(AgentEvent.created_at)))
