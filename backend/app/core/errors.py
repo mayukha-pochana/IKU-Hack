@@ -20,4 +20,6 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _val_err(_: Request, e: RequestValidationError):
-        return JSONResponse(_body("validation_error", "Invalid request", {"errors": e.errors()}), status_code=422)
+        # "ctx" can hold the raw exception object (custom validators), which isn't JSON-serialisable.
+        errors = [{k: v for k, v in err.items() if k != "ctx"} for err in e.errors()]
+        return JSONResponse(_body("validation_error", "Invalid request", {"errors": errors}), status_code=422)

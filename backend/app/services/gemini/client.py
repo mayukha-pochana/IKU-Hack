@@ -1,4 +1,5 @@
 # OWNER: Member 4 - thin Gemini REST adapter. Raises AppError if unconfigured (no silent fake output).
+import asyncio
 import base64
 import re
 
@@ -8,6 +9,8 @@ from app.core.config import settings
 from app.core.errors import AppError
 
 BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+RETRY_STATUSES = {429, 500, 502, 503, 504}   # rate limit / overload: transient, worth one retry
+RETRY_DELAY_SECONDS = 1.5
 
 
 def require_configured():
@@ -35,9 +38,13 @@ async def _generate(parts: list[dict], schema: dict | None = None) -> str:
     config = {"responseMimeType": "application/json", "responseJsonSchema": gemini_schema(schema)} if schema else {}
     try:
         async with httpx.AsyncClient(timeout=60) as c:
-            r = await c.post(f"{BASE}/{settings.gemini_model}:generateContent",
-                             headers={"x-goog-api-key": settings.gemini_api_key},
-                             json={"contents": [{"parts": parts}], "generationConfig": config})
+            for attempt in range(2):
+                r = await c.post(f"{BASE}/{settings.gemini_model}:generateContent",
+                                 headers={"x-goog-api-key": settings.gemini_api_key},
+                                 json={"contents": [{"parts": parts}], "generationConfig": config})
+                if r.status_code not in RETRY_STATUSES or attempt:
+                    break
+                await asyncio.sleep(RETRY_DELAY_SECONDS)
             r.raise_for_status()
             candidate = r.json()["candidates"][0]
             if candidate.get("finishReason") != "STOP":

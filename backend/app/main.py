@@ -7,7 +7,7 @@ from app.core.errors import register_error_handlers
 from app.routers import (
     auth, profile, trials,                                   # Member 3
     prescriptions, medications, schedule, adherence,         # Member 4
-    biometrics, voice,                                       # Member 4
+    biometrics, voice, agent,                                # Member 4
 )
 
 app = FastAPI(title="CareFlow AI API", version="0.1.0")
@@ -21,7 +21,7 @@ app.add_middleware(
 )
 register_error_handlers(app)
 
-for r in (auth, profile, trials, prescriptions, medications, schedule, adherence, biometrics, voice):
+for r in (auth, profile, trials, prescriptions, medications, schedule, adherence, biometrics, voice, agent):
     app.include_router(r.router, prefix="/api")
 
 

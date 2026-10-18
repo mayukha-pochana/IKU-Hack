@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.health_checkin import HealthCheckin
 from app.models.user import User
 from app.schemas.biometrics import CheckinCreate, CheckinOut
+from app.services.agent.facts import record_event
 
 router = APIRouter(prefix="/health-checkins", tags=["biometrics"])
 
@@ -19,6 +20,10 @@ def create(body: CheckinCreate, user: User = Depends(get_current_user), db: Sess
         symptom_report=body.symptom_report, measurement_source=body.measurement_source,
     )
     db.add(c)
+    if body.measurement_source == "presage_sdk":
+        vitals = ", ".join(f"{label} {value:g}/min" for label, value in
+                           (("heart rate", body.heart_rate), ("breathing", body.breathing_rate)) if value)
+        record_event(db, user.id, "checkin_recorded", f"Presage check-in: {vitals or 'no vitals'} (camera estimate).")
     db.commit()
     db.refresh(c)
     return c
