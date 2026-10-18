@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CareflowAI</string>
+    <string name="title_activity_main">CareflowAI</string>
+    <string name="package_name">com.careflow.app</string>
+    <string name="custom_url_scheme">com.careflow.app</string>
+</resources>
