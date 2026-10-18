@@ -94,5 +94,5 @@ export interface MedicationCreate {
 }
 export interface CheckinCreate {
   heart_rate: number | null; breathing_rate: number | null; symptom_report: string | null;
-  measurement_source: "presage_sdk" | "none"; consent_given: boolean;
+  measurement_source: "presage_sdk" | "demo_sample" | "none"; consent_given: boolean;
 }

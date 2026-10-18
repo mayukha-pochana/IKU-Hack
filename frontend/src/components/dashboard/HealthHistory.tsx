@@ -111,6 +111,7 @@ function DayEntries({ day, list }: { day: Date; list: Checkin[] | undefined }) {
                       {c.heart_rate != null && <span className="flex items-center gap-1.5"><HeartPulse aria-hidden="true" size={16} className="text-violet-text" />{Math.round(c.heart_rate)} bpm</span>}
                       {c.breathing_rate != null && <span className="flex items-center gap-1.5"><Wind aria-hidden="true" size={16} className="text-violet-text" />{Math.round(c.breathing_rate)} breaths/min</span>}
                       {c.measurement_source === "presage_sdk" && <span className="text-caption text-ink-muted">Measured with Presage</span>}
+                      {c.measurement_source === "demo_sample" && <span className="text-caption text-ink-muted">Sample reading (demo)</span>}
                     </div>
                   )}
                   {note && <p className="text-ink">{note}</p>}

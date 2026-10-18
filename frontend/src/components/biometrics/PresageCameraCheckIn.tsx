@@ -18,6 +18,8 @@ type Live = { seconds: number; heart_rate: number | null; breathing_rate: number
 type Reading = { heart_rate: number | null; breathing_rate: number | null };
 
 const FPS = 30;
+/** Shown, clearly labelled, only when a live Presage measurement can't finish (demo fallback). Never saved as Presage. */
+const SAMPLE_READING: Reading = { heart_rate: 72, breathing_rate: 14 };
 const FRAME_WIDTH = 640;
 
 /** Streams camera frames (JPEG, prefixed with a µs capture time) to the gateway's Presage SDK session and resolves
@@ -81,6 +83,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
   const [keepReading, setKeepReading] = useState(true);
   const [live, setLive] = useState<Live | null>(null);
   const [failMsg, setFailMsg] = useState<string | null>(null);
+  const [sample, setSample] = useState(false);
   const stopMeasuring = useRef<(() => void) | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,7 +93,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
   useEffect(() => () => { stopMeasuring.current?.(); stop(); }, []);
 
   async function measure() {
-    setErr(null); setReading(null); setLive(null); setFailMsg(null);
+    setErr(null); setReading(null); setLive(null); setFailMsg(null); setSample(false);
     if (!navigator.mediaDevices?.getUserMedia) { setPhase("unavailable"); return; }
     try {
       stream.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } }); // browser asks for permission here
@@ -99,8 +102,8 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
       setReading(await runPresageMeasurement(video.current!, setLive, stopMeasuring)); setPhase("done"); setKeepReading(true);
     } catch (e) {
       const name = e instanceof DOMException ? e.name : e instanceof Error ? e.message : "";
-      setPhase(name === "PRESAGE_NOT_INTEGRATED" ? "unavailable" : name === "NotAllowedError" ? "denied" : "failed");
-      if (!(e instanceof DOMException) && name !== "PRESAGE_NOT_INTEGRATED") setFailMsg(name);
+      if (name === "NotAllowedError") setPhase("denied");
+      else { setReading(SAMPLE_READING); setSample(true); setKeepReading(true); setPhase("done"); } // labelled demo fallback
     } finally { stop(); } // never keep or store video
   }
 
@@ -111,10 +114,10 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
     try {
       await checkins.create({
         heart_rate: withReading?.heart_rate ?? null, breathing_rate: withReading?.breathing_rate ?? null,
-        symptom_report: toReport(mood, note), measurement_source: withReading ? "presage_sdk" : "none",
+        symptom_report: toReport(mood, note), measurement_source: withReading ? (sample ? "demo_sample" : "presage_sdk") : "none",
         consent_given: true, // the person pressed "Save to my diary"; vitals also need the camera consent above
       });
-      setSaved(true); setMood(null); setNote(""); setReading(null); setPhase("idle"); setOpen(false); onSaved();
+      setSaved(true); setMood(null); setNote(""); setReading(null); setSample(false); setPhase("idle"); setOpen(false); onSaved();
     } catch (e) { setErr(errorMessage(e, "We couldn't save your entry. Please try again.")); }
     finally { setSaving(false); }
   }
@@ -211,7 +214,9 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
                     <div className="rounded-md bg-mint-soft p-4"><Wind aria-hidden="true" size={20} className="text-mint-text" /><p className="text-h1">{reading.breathing_rate != null ? Math.round(reading.breathing_rate) : "–"}</p><p className="text-label font-normal text-ink-muted">breaths per minute</p></div>
                   </div>
                   <label className="pz-check"><input type="checkbox" checked={keepReading} onChange={(e) => setKeepReading(e.target.checked)} />Save these readings with today&apos;s entry.</label>
-                  <p className="text-caption text-ink-muted">Measured with Presage. For your records only. They don&apos;t diagnose anything.</p>
+                  {sample
+                    ? <Notice>Sample reading (demo). Presage couldn&apos;t finish this measurement, so these are example values, not your own.</Notice>
+                    : <p className="text-caption text-ink-muted">Measured with Presage. For your records only. They don&apos;t diagnose anything.</p>}
                 </>
               )}
             </div>
