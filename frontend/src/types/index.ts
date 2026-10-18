@@ -16,7 +16,13 @@ export interface Profile {
 }
 export interface Medication {
   id: string; name: string; strength: string | null; instructions: string | null;
-  frequency: string | null; confirmed_schedule: { times: string[]; duration_days: number; timezone: string };
+  frequency: string | null; confirmed_schedule: Schedule;
+}
+// "daily" when absent (older medicines). as_needed has no scheduled doses; they're logged when taken.
+export type SchedulePattern = "daily" | "every_n_days" | "weekly" | "as_needed";
+export interface Schedule {
+  pattern?: SchedulePattern; times: string[]; duration_days: number; timezone: string;
+  interval_days?: number | null; weekdays?: number[] | null; // weekdays: 0 = Monday ... 6 = Sunday
 }
 export interface ParsedPrescription {
   medication_name: string | null; strength: string | null; dose_instructions: string | null;
@@ -81,7 +87,7 @@ export interface Checkin {
 export interface AdherenceDay { day: string; scheduled: number; taken: number; missed: number }
 export interface MedicationCreate {
   name: string; strength: string | null; instructions: string | null; frequency: string | null;
-  schedule: { times: string[]; duration_days: number; timezone: string };
+  schedule: Schedule;
 }
 export interface CheckinCreate {
   heart_rate: number | null; breathing_rate: number | null; symptom_report: string | null;

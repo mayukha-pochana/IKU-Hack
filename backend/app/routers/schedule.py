@@ -1,6 +1,7 @@
 # OWNER: Member 4 (schedule + dose status endpoints)
 import uuid
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,17 +28,34 @@ def _range(db: Session, user: User, start: datetime, end: datetime) -> list[Dose
                     scheduled_at=d.scheduled_at, status=d.status, confirmed_at=d.confirmed_at) for d, n in rows]
 
 
+def patient_zone(db: Session, user: User) -> ZoneInfo:
+    """The patient's timezone, taken from their most recent medication (default Europe/London)."""
+    sched = db.scalar(select(Medication.confirmed_schedule).where(Medication.user_id == user.id)
+                      .order_by(Medication.created_at.desc()).limit(1))
+    try:
+        return ZoneInfo((sched or {}).get("timezone") or "Europe/London")
+    except Exception:
+        return ZoneInfo("Europe/London")
+
+
+def local_midnight(zone: ZoneInfo, now: datetime | None = None, days: int = 0) -> datetime:
+    """Midnight `days` from today in the patient's timezone, as an aware datetime (DST-safe)."""
+    today = (now or datetime.now(timezone.utc)).astimezone(zone).date() + timedelta(days=days)
+    return datetime.combine(today, datetime.min.time(), tzinfo=zone)
+
+
 @router.get("/schedule/today", response_model=list[DoseOut])
 def today(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # TODO(M4): use the patient's timezone rather than UTC day boundaries.
-    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    return _range(db, user, start, start + timedelta(days=1))
+    zone = patient_zone(db, user)
+    return _range(db, user, local_midnight(zone), local_midnight(zone, days=1))
 
 
 @router.get("/schedule/week", response_model=list[DoseOut])
 def week(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    return _range(db, user, start, start + timedelta(days=7))
+    """Monday to Sunday of the current week, matching the frontend's weekly calendar."""
+    zone = patient_zone(db, user)
+    monday = -datetime.now(timezone.utc).astimezone(zone).weekday()
+    return _range(db, user, local_midnight(zone, days=monday), local_midnight(zone, days=monday + 7))
 
 
 @router.patch("/doses/{dose_id}/status", response_model=DoseOut)
