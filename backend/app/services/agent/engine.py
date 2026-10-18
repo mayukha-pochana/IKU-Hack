@@ -33,6 +33,19 @@ VERDICT = {"supports": "counts in your favour", "conflicts": "means this study m
            "unknown": "needs checking with the study team"}
 
 
+_GENERIC = {"tablet", "tablets", "capsule", "capsules", "injection", "solution", "units", "unit", "solostar", "kwikpen",
+            "flexpen", "pen", "pens", "pre", "filled", "oral", "cream", "inhaler", "once", "daily"}
+
+
+def name_words(name: str) -> set[str]:
+    """Meaningful words of a medicine name: "Toujeo SoloStar (Insulin Glargine)" -> {toujeo, insulin, glargine}."""
+    return {w for w in re.findall(r"[a-z]+", name.lower()) if len(w) >= 4 and w not in _GENERIC}
+
+
+def mentions(name: str, text: str) -> bool:
+    return any(re.search(rf"\b{re.escape(w)}", text) for w in name_words(name))
+
+
 def _key(text: str) -> str:
     return re.sub(r"\W+", " ", text).strip().lower()
 
@@ -80,11 +93,11 @@ def fix_options(row: TrialConclusion, record: dict) -> list[dict]:
             continue
         text = " ".join(str(c.get(k) or "") for k in ("evidence", "original_text", "plain_text")).lower()
         for name in taking:
-            if c["effect"] == "conflicts" and name.split()[0].lower() in text:
+            if c["effect"] == "conflicts" and mentions(name, text):
                 options.append({"label": f"I stopped taking {name}", "facts": [{"type": "medication_stopped",
                                                                                 "value": name}]})
         for name in stopped:
-            if name.split()[0].lower() in text:
+            if mentions(name, text):
                 options.append({"label": f"I'm taking {name} again", "facts": [{"type": "medication_taking",
                                                                                "value": name}]})
         for name in conditions:
@@ -136,19 +149,18 @@ def watch(db: Session, user_id, result: TrialExplanation, record_hash: str) -> N
 def apply_known_facts(criteria: list[CriterionAssessment], record: dict) -> list[CriterionAssessment]:
     """Fallback when Gemini is unavailable: update exclusions that hinged on a medication or condition the patient
     has since corrected, so the answer follows the correction now; Gemini re-checks everything on the next pass."""
-    first = lambda name: name.split()[0].lower()
-    stopped = [first(m) for m in record.get("medications_patient_says_stopped", [])]
-    stopped += [c.lower() for c in record.get("conditions_ruled_out_by_patient", [])]
-    taking = [first(m["name"]) for m in record.get("confirmed_medications", [])]
+    stopped = list(record.get("medications_patient_says_stopped", []))
+    stopped += list(record.get("conditions_ruled_out_by_patient", []))
+    taking = [m["name"] for m in record.get("confirmed_medications", [])]
     out = []
     for c in criteria:
         text = " ".join(filter(None, (c.evidence, c.original_text, c.plain_text))).lower()
-        if c.kind == "exclusion" and c.effect == "conflicts" and any(w in text for w in stopped) \
-                and not any(w in text for w in taking):
+        if c.kind == "exclusion" and c.effect == "conflicts" and any(mentions(n, text) for n in stopped) \
+                and not any(mentions(n, text) for n in taking):
             c = c.model_copy(update={"applies_to_patient": "NO", "effect": "supports", "evidence_source": "patient_correction",
                                      "evidence": "you told us you stopped", "note": "Updated from what you told us."})
         elif c.kind == "exclusion" and c.effect == "supports" and c.evidence_source == "patient_correction" \
-                and any(w in text for w in taking):
+                and any(mentions(n, text) for n in taking):
             c = c.model_copy(update={"applies_to_patient": "YES", "effect": "conflicts", "evidence_source": "medication",
                                      "evidence": "your medication list", "note": None})
         out.append(c)
