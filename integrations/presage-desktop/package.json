@@ -9,10 +9,13 @@
     "start": "npm run build && electron .",
     "check:sdk": "node check-sdk.mjs",
     "check:desktop": "npm run build && electron . --careflow-smoke-test",
-    "test": "node --test *.test.mjs"
+    "test": "node --test *.test.mjs",
+    "gateway": "node web-gateway.mjs"
   },
   "dependencies": {
-    "@smartspectra/node-sdk": "3.4.0"
+    "@smartspectra/node-sdk": "3.4.0",
+    "jpeg-js": "^0.4.4",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "electron": "44.9.0",
