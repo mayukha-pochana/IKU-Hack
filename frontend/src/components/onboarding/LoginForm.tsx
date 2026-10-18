@@ -7,10 +7,14 @@ import { ApiError, auth } from "@/lib/api";
 import { Notice, Spinner, TextField, errorMessage } from "@/components/ui/pz";
 import { destinationAfterSignIn } from "./routing";
 import { previewAvailable, setPreview } from "@/lib/preview";
+import { isNativeApp } from "@/lib/native";
 
 type Busy = null | "link" | "demo";
 
 export function LoginForm() {
+  // The developer-only preview option is hidden inside the phone app.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(isNativeApp()), []);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<Busy>(null);
@@ -72,7 +76,7 @@ export function LoginForm() {
         </button>
         <p className="text-caption text-ink-muted">Demo mode: signs you in as Maya, a sample patient. All data is synthetic.</p>
       </div>
-      {previewAvailable && (
+      {previewAvailable && !inApp && (
         <div className="flex flex-col gap-2 rounded-md border border-dashed border-line-strong p-4">
           <button type="button" className="pz-btn pz-btn--ghost !justify-start !px-0 text-left" onClick={() => { setPreview(true); router.push("/dashboard"); }}>
             <Eye aria-hidden="true" size={20} /> Preview the app without the backend

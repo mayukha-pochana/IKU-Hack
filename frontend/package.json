@@ -7,9 +7,10 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "mobile:sync": "npm run build && npx cap sync",
-    "mobile:android": "npm run mobile:sync && npx cap open android",
-    "mobile:ios": "npm run mobile:sync && npx cap open ios"
+    "mobile:sync": "npx cap sync",
+    "mobile:android": "npx cap sync android && npx cap open android",
+    "mobile:ios": "npx cap sync ios && npx cap open ios",
+    "build:static": "STATIC_EXPORT=1 next build"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
@@ -20,7 +21,6 @@
     "clsx": "^2.1.0",
     "lucide-react": "^0.400.0",
     "next": "^14.2.0",
-    "nodejs": "^0.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "tailwind-merge": "^2.3.0"

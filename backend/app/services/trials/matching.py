@@ -33,6 +33,23 @@ def extract_criteria_items(text: str | None, limit: int = MAX_ITEMS) -> list[str
     return items[:limit]
 
 
+_UK = {"uk", "united kingdom", "england", "scotland", "wales", "northern ireland", "gb", "great britain"}
+
+
+def _country(name: str) -> str:
+    n = name.strip().lower()
+    return "united kingdom" if n in _UK else n
+
+
+def site_matches(patient_location: str, city: str | None, country: str | None) -> bool:
+    parts = [p.strip() for p in patient_location.split(",") if p.strip()]
+    if not parts or not city:
+        return False
+    if parts[0].lower() != city.strip().lower():
+        return False
+    return len(parts) < 2 or _country(parts[-1]) == _country(country or "")
+
+
 def match_trial(profile: PatientProfile, trial: Trial) -> TrialMatch:
     why, relevant, missing, confirm = [], [], [], []
     mismatch = False
@@ -55,10 +72,9 @@ def match_trial(profile: PatientProfile, trial: Trial) -> TrialMatch:
             relevant.append(f"Maximum age: {hi}")
             mismatch |= profile.age > hi
 
-    # Location (simple city/country text overlap)
+    # Location: same city, and same country when the patient gave one ("Birmingham, UK" is not Birmingham, Alabama)
     if profile.location and trial.locations:
-        loc = profile.location.lower()
-        if any(loc in f"{l.city or ''} {l.country or ''}".lower() for l in trial.locations):
+        if any(site_matches(profile.location, l.city, l.country) for l in trial.locations):
             why.append(f"Study site found near {profile.location}")
         else:
             missing.append(f"No listed site matching {profile.location}.")

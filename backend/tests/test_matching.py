@@ -32,3 +32,11 @@ def test_extract_handles_empty_and_numbered():
     from app.services.trials.matching import extract_criteria_items
     assert extract_criteria_items(None) == []
     assert extract_criteria_items("Exclusion Criteria:\n1. A\n2) B") == ["A", "B"]
+
+
+def test_site_matching_respects_country():
+    from app.services.trials.matching import site_matches
+    assert site_matches("Birmingham, UK", "Birmingham", "United Kingdom")
+    assert not site_matches("Birmingham, UK", "Birmingham", "United States")   # UAB, Alabama
+    assert site_matches("Birmingham", "Birmingham", "United States")           # no country given: city only
+    assert not site_matches("London", "Birmingham", "United Kingdom")

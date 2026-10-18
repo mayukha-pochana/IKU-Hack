@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',          // Generates static HTML/JS for Capacitor and static hosting
-  images: {
-    unoptimized: true,       // Required for static export since Next.js image optimization needs a server
-  },
-  trailingSlash: true,       // Ensures proper routing paths inside the mobile WebView
-};
+// The mobile app (Capacitor) loads the running PhaseZero server, so every route works, including
+// /trials/<id>. A fully static build for app stores is opt-in: STATIC_EXPORT=1 npm run build.
+const staticExport = process.env.STATIC_EXPORT === "1";
+
+const nextConfig = staticExport
+  ? {
+      output: "export",          // static HTML/JS for packaging inside the app
+      images: { unoptimized: true },
+      trailingSlash: true,
+    }
+  : {};
 
 export default nextConfig;

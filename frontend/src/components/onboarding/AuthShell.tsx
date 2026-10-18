@@ -15,7 +15,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen md:grid md:grid-cols-[1fr_minmax(0,440px)] lg:grid-cols-[1fr_minmax(0,520px)]">
       <div className="flex flex-col">
         <PreviewBanner />
-        <div className="flex flex-1 flex-col px-4 py-6 md:px-10 md:py-8">
+        <div className="flex flex-1 flex-col px-4 pb-6 pt-[calc(env(safe-area-inset-top)+24px)] md:px-10 md:py-8">
         <Logo />
         <main id="main" className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 py-10">{children}</main>
         </div>

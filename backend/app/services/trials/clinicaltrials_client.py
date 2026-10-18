@@ -1,4 +1,6 @@
 # OWNER: Member 3 - ClinicalTrials.gov API v2 adapter (live; no API key required).
+import re
+
 import httpx
 from app.core.errors import AppError
 from app.schemas.trials import Trial, TrialLocation
@@ -46,6 +48,23 @@ def _split_criteria(text: str) -> tuple[str | None, str | None]:
     if i == -1:
         return None, text[e:].strip()
     return (text[i:e].strip(), text[e:].strip()) if i < e else (text[i:].strip(), text[e:i].strip())
+
+
+async def search_for_patient(condition: str, location: str | None, page_size: int = 15) -> list[Trial]:
+    """Recruiting trials for a condition, near the patient when we know where they live (falls back to anywhere)."""
+    params = {"query.cond": condition, "filter.overallStatus": "RECRUITING", "pageSize": page_size}
+    if location:   # "Birmingham, UK" -> "Birmingham, United Kingdom" so the registry's location search understands it
+        params["query.locn"] = re.sub(r"\b(UK|U\.K\.|England|GB)\b", "United Kingdom", location)
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.get(f"{BASE}/studies", params=params)
+            r.raise_for_status()
+    except httpx.HTTPError as e:
+        raise AppError("clinicaltrials_unavailable", "ClinicalTrials.gov request failed.", 502, {"reason": str(e)})
+    trials = [parse_study(s) for s in r.json().get("studies", [])]
+    if not trials and location:
+        return await search_for_patient(condition, None, page_size)
+    return trials
 
 
 async def search_trials(term: str, page_size: int = 10) -> list[Trial]:

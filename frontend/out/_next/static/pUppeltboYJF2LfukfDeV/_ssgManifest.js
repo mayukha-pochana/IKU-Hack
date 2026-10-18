@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Ftrials\u002F[nctId]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()
