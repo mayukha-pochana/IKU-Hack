@@ -94,11 +94,11 @@ def fix_options(row: TrialConclusion, record: dict) -> list[dict]:
         text = " ".join(str(c.get(k) or "") for k in ("evidence", "original_text", "plain_text")).lower()
         for name in taking:
             if c["effect"] == "conflicts" and mentions(name, text):
-                options.append({"label": f"I stopped taking {name}", "facts": [{"type": "medication_stopped",
+                options.append({"label": f"I'm not taking {name}", "facts": [{"type": "medication_stopped",
                                                                                 "value": name}]})
         for name in stopped:
             if mentions(name, text):
-                options.append({"label": f"I'm taking {name} again", "facts": [{"type": "medication_taking",
+                options.append({"label": f"I am taking {name}", "facts": [{"type": "medication_taking",
                                                                                "value": name}]})
         for name in conditions:
             if c["effect"] == "conflicts" and name.lower() in text:

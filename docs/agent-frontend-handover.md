@@ -44,7 +44,7 @@ It appears on a trial once the patient has opened that trial's explanation:
 ### 1. Dashboard notice
 `GET /api/agent/updates` returns:
 ```json
-{ "new_count": 1, "updates": [ { "nct_id": "NCT07760883", "title": "...", "...": "the update fields above" } ], "handled_events": [] }
+{ "new_count": 1, "updates": [ { "nct_id": "NCT06897475", "title": "...", "...": "the update fields above" } ], "handled_events": [] }
 ```
 - If `new_count > 0`, show a card: bell icon, "**1 trial changed**", the first update's title, and "{label}, {reason}". The button "See why" links to `/trials/{nct_id}`.
 - If `new_count` is 0, show nothing.
@@ -83,13 +83,5 @@ After `POST /api/health-checkins` succeeds, call `GET /api/agent/updates`:
 ## Remove
 - The "Read aloud" button (ElevenLabs is no longer used).
 
-## Demo trial
-NCT07760883 (Metformin Effects According to SLC16A11 Carrier Status).
-
-Demo patient: Maya, 52, type 2 diabetes, London, taking Metformin.
-
-1. Open the trial: **We need to check**.
-2. Add Insulin glargine on the medications page. The dashboard says **1 trial changed**, and the card shows **Not a fit right now**, with the insulin reason.
-3. Tap "Not right? Fix it" → "I stopped taking Insulin glargine". The card goes back to **We need to check**.
-
-Leave a few seconds between steps: Gemini's free tier rate-limits quick bursts. If a card shows "We'll double-check this shortly", that's the busy fallback, and the next action catches up.
+## Demo
+The full story and narration are in `docs/demo-script.md` (trial NCT06897475, Maya in Birmingham, insulin box scan, one-tap "I'm not taking …", Stop taking).

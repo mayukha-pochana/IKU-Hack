@@ -28,13 +28,13 @@ cd frontend && npm install && npm run dev   # http://localhost:3000
 ```bash
 docker compose up -d db                       # Postgres/TimescaleDB on :5432
 cd backend && alembic upgrade head            # creates all tables
-python -m scripts.reset_demo                  # Maya, 52, type 2 diabetes, London, taking Metformin
+python -m scripts.reset_demo                  # Maya, 52, Birmingham, type 2 diabetes, Metformin + weekly Semaglutide + Paracetamol
 uvicorn app.main:app --port 8000              # set GEMINI_API_KEY and GEMINI_MODEL in backend/.env
 cd ../frontend && npm run dev                 # http://localhost:3000 -> "Try the demo account"
 ```
 - Use `GEMINI_MODEL=gemini-3.5-flash-lite`: in testing it answered in about 5 s, while `gemini-3.1-flash-lite` swung from 3 to 30+ s.
-- Before recording, open trial NCT07760883 once so its explanation is cached, then run `reset_demo` only if you need a clean start.
-- Demo story: open NCT07760883 ("We need to check") → add Insulin glargine on My medications → dashboard "1 trial changed" ("Not a fit right now") → trial page "Not right? Fix it" → "I stopped taking Insulin glargine" → back to "We need to check".
+- Before recording, open trial NCT06897475 (Birmingham) once so its explanation is cached, then `reset_demo` for a clean start.
+- Demo story and narration: [`docs/demo-script.md`](docs/demo-script.md). Scan `demo-assets/insulin-box-with-pharmacy-label.jpg` (synthetic pharmacy label) when Maya's GP prescribes insulin.
 - If port 8000 is taken, run the backend on another port and start the frontend with `NEXT_PUBLIC_API_URL=http://localhost:<port>`.
 
 ## Integration status (keep honest!)
