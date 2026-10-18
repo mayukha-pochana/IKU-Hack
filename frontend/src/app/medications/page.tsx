@@ -36,7 +36,7 @@ export default function MedicationsPage() {
       <section aria-labelledby="meds-h" className="flex flex-col gap-3">
         <h2 id="meds-h" className="text-h2">Saved medicines</h2>
         {!meds ? <Loader label="Loading your medicines…" /> : meds.length ? (
-          <div className="grid gap-4 md:grid-cols-2">{meds.map((m) => <MedicationCard key={m.id} med={m} />)}</div>
+          <div className="grid gap-4 md:grid-cols-2">{meds.map((m) => <MedicationCard key={m.id} med={m} onLogged={bump} />)}</div>
         ) : <p className="text-ink-muted">No medicines yet. Scan a prescription above to add your first.</p>}
       </section>
     </DashboardLayout>

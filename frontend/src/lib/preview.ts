@@ -29,10 +29,18 @@ type DB = { profile: T.Profile | null; meds: T.Medication[]; doses: (T.Dose & { 
   demo: { stoppedInsulin: boolean; seen: boolean; changedAt: string } };
 let db: DB | null = null;
 
-function makeDoses(m: T.Medication, fromDay: number, everyDays = 1) {
+// Mirrors the backend generator: daily, every_n_days, weekly (0 = Monday) and as_needed (no scheduled doses).
+function makeDoses(m: T.Medication, fromDay: number) {
   const out: DB["doses"] = [];
-  const days = Math.min(m.confirmed_schedule.duration_days, 28);
-  for (let d = fromDay; d < fromDay + days; d += everyDays) for (const t of m.confirmed_schedule.times)
+  const s = m.confirmed_schedule;
+  if (s.pattern === "as_needed") return out;
+  const days = Math.min(s.duration_days, 28);
+  const keep = (offset: number, d: number) => {
+    if (s.pattern === "every_n_days") return offset % (s.interval_days ?? 1) === 0;
+    if (s.pattern === "weekly") { const day = new Date(); day.setDate(day.getDate() + d); return (s.weekdays ?? []).includes((day.getDay() + 6) % 7); }
+    return true;
+  };
+  for (let d = fromDay; d < fromDay + days; d++) if (keep(d - fromDay, d)) for (const t of s.times)
     out.push({ id: uid(), medication_id: m.id, medication_name: `${m.name}${m.strength ? ` ${m.strength}` : ""}`, scheduled_at: at(d, t), status: "SCHEDULED", confirmed_at: null });
   return out;
 }
@@ -43,15 +51,16 @@ function seed(): DB {
   const med: T.Medication = { id: "med-1", name: "Beclometasone", strength: "100 mcg", instructions: "2 puffs, morning and night", frequency: "twice daily", confirmed_schedule: { times: ["09:00", "21:00"], duration_days: 28, timezone: "Europe/London" } };
   const med2: T.Medication = { id: "med-2", name: "Montelukast", strength: "10 mg", instructions: "1 tablet at night", frequency: "once daily", confirmed_schedule: { times: ["21:00"], duration_days: 28, timezone: "Europe/London" } };
   const med3: T.Medication = { id: "med-3", name: "Hydrocortisone 1% cream", strength: null, instructions: "Apply thinly to the rash once a day", frequency: "once daily", confirmed_schedule: { times: ["20:00"], duration_days: 14, timezone: "Europe/London" } };
-  const med4: T.Medication = { id: "med-4", name: "Omalizumab", strength: "150 mg", instructions: "Injection under the skin every 2 weeks at the clinic", frequency: "every 2 weeks", confirmed_schedule: { times: ["10:00"], duration_days: 28, timezone: "Europe/London" } };
+  const med4: T.Medication = { id: "med-4", name: "Omalizumab", strength: "150 mg", instructions: "Injection under the skin every 2 weeks at the clinic", frequency: "every 2 weeks", confirmed_schedule: { pattern: "every_n_days", interval_days: 14, times: ["10:00"], duration_days: 28, timezone: "Europe/London" } };
+  const med5: T.Medication = { id: "med-5", name: "Salbutamol", strength: "100 mcg", instructions: "2 puffs when short of breath", frequency: "as needed", confirmed_schedule: { pattern: "as_needed", times: [], duration_days: 90, timezone: "Europe/London" } };
   const sinceMonday = -((new Date().getDay() + 6) % 7); // fill the whole Monday-to-Sunday week
-  const doses = [...makeDoses(med, sinceMonday), ...makeDoses(med2, sinceMonday), ...makeDoses(med3, sinceMonday), ...makeDoses(med4, sinceMonday + 3, 14)];
+  const doses = [...makeDoses(med, sinceMonday), ...makeDoses(med2, sinceMonday), ...makeDoses(med3, sinceMonday), ...makeDoses(med4, sinceMonday + 3)];
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0); // leave today's doses for the user to log
   doses.forEach((d, i) => { if (new Date(d.scheduled_at).getTime() < startOfToday.getTime()) { d.status = i === 2 ? "MISSED" : "TAKEN"; d.confirmed_at = d.status === "TAKEN" ? d.scheduled_at : null; } });
   return {
     profile: { id: "p-1", user_id: "u-1", display_name: "Maya", age: 28, conditions: ["Asthma"], location: "London", preferred_language: "en",
       date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 },
-    meds: [med, med2, med3, med4], doses, bookmarks: [],
+    meds: [med, med2, med3, med4, med5], doses, bookmarks: [],
     demo: { stoppedInsulin: false, seen: false, changedAt: new Date().toISOString() },
     // Sample diary entries over the last six weeks, with a few days skipped (preview only).
     checkins: Array.from({ length: 42 }, (_, k) => 42 - k).filter((n) => n % 5 !== 2 && n % 7 !== 4).map((n) => {
@@ -146,11 +155,22 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
     return s.profile;
   }
 
-  if (route === "/prescriptions/parse") return {
-    medication_name: "Salbutamol", strength: "100 mcg", dose_instructions: "1 to 2 puffs when needed", frequency: "as needed",
-    times: ["08:00"], duration_days: null, plain_language_summary: "Preview sample: a reliever inhaler you use when you feel short of breath.",
-    uncertainties: ["Preview mode: this is sample text, not read from your photo.", "No duration was found."],
-  } satisfies T.ParsedPrescription;
+  if (route === "/prescriptions/parse") {
+    const photos = init.body instanceof FormData ? init.body.getAll("files").length : 1;
+    return {
+      medication_name: "Amoxicillin", strength: "500 mg", dose_instructions: "Take one capsule three times a day with water", frequency: "three_times_daily",
+      times: [], duration_days: 7, plain_language_summary: "Preview sample: an antibiotic capsule taken three times a day for a week.",
+      uncertainties: [`Preview mode: sample text, not read from your ${photos} photo${photos === 1 ? "" : "s"}.`, "No administration times are printed; times were not found."],
+    } satisfies T.ParsedPrescription;
+  }
+  const logDose = route.match(/^\/medications\/(.+)\/doses$/);
+  if (logDose && method === "POST") {
+    const m = s.meds.find((x) => x.id === logDose[1]);
+    if (!m) throw new PreviewError("not_found", "Medication not found.", 404);
+    if (m.confirmed_schedule.pattern !== "as_needed") throw new PreviewError("not_as_needed", "Log scheduled doses from your schedule instead.", 409);
+    const d = { id: uid(), medication_id: m.id, medication_name: `${m.name}${m.strength ? ` ${m.strength}` : ""}`, scheduled_at: now.toISOString(), status: "TAKEN" as const, confirmed_at: now.toISOString() };
+    s.doses.push(d); return strip(d);
+  }
   if (route === "/medications" && method === "POST") {
     const m: T.Medication = { id: uid(), name: body.name, strength: body.strength, instructions: body.instructions, frequency: body.frequency, confirmed_schedule: body.schedule };
     s.meds.push(m); s.doses.push(...makeDoses(m, 0)); return m;
