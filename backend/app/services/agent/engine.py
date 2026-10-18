@@ -135,7 +135,7 @@ def watch(db: Session, user_id, result: TrialExplanation, record_hash: str) -> N
                                previous_status=None, criteria=criteria, record_hash=record_hash, provisional=False,
                                reason="First check with your current information.",
                                seen_at=datetime.now(timezone.utc)))
-        event = record_event(db, user_id, "trial_watched", f"You opened {result.title}. CareFlow will keep it updated.")
+        event = record_event(db, user_id, "trial_watched", f"You opened {result.title}. PhaseZero will keep it updated.")
         event.processed_at = datetime.now(timezone.utc)
         event.changes = [{"nct_id": result.nct_id, "title": result.title, "from": None, "to": status,
                           "reason": "First check."}]

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'none'">
+<title>PhaseZero Presage check-in</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <p>CAREFLOW AI · OPTIONAL CHECK-IN</p>
+  <h1>A moment to check in.</h1>
+  <p>This desktop companion uses the real Presage SmartSpectra SDK. Sit still in good light with your face and upper chest visible. Results are for general wellness.</p>
+  <button id="connect-demo">Connect shared synthetic demo account</button>
+  <p id="connection" role="status">Connect to the local PhaseZero backend, or paste a capture token from your signed-in check-in page.</p>
+  <label for="capture-token">Capture token</label>
+  <textarea id="capture-token" rows="3" autocomplete="off" spellcheck="false"></textarea>
+  <label class="consent"><input id="camera-consent" type="checkbox"> I agree to camera processing by Presage for this measurement. PhaseZero does not store camera video.</label>
+  <div class="actions"><button id="start">Start camera measurement</button><button id="stop" disabled>Stop camera</button></div>
+  <video id="preview" autoplay playsinline muted aria-label="Live camera preview"></video>
+  <p id="status" role="status" aria-live="polite">Camera is off.</p>
+  <p id="hint" role="status" aria-live="polite"></p>
+  <progress id="progress" max="60" value="0" aria-label="Measurement time elapsed"></progress>
+  <p id="metrics">Heart rate: — · Breathing rate: —</p>
+  <label class="consent"><input id="result-consent" type="checkbox" disabled> I want to transfer this measurement to my PhaseZero check-in.</label>
+  <button id="finish" disabled>Use measured result</button>
+  <label for="result">Signed result — review and save below, or copy to your PhaseZero check-in page</label>
+  <p id="receipt-status" role="status" aria-live="polite">Waiting for a stable SDK measurement. No signed result has been created yet.</p>
+  <textarea id="result" rows="5" readonly spellcheck="false" placeholder="A signed result appears here after you choose Use measured result."></textarea>
+  <label class="consent"><input id="save-consent" type="checkbox" disabled> Save this measurement to the shared synthetic demo account. Other demo users may see it.</label>
+  <button id="save" disabled>Save check-in to demo account</button>
+  <p>Closing this window releases the camera. Measurements do not verify medication ingestion and are not a diagnosis.</p>
+</main>
+<script src="dist/renderer.js"></script>
+</html>

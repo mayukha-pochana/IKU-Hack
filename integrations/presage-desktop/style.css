@@ -1,0 +1,9 @@
+:root { font: 17px/1.5 system-ui,sans-serif; color:#153a3b; background:#eef6f2; }
+main { max-width:660px; margin:28px auto; padding:24px; background:white; border-radius:20px; }
+h1 { font-size:34px; margin:8px 0; } label { display:block; margin:14px 0 6px; }
+textarea { box-sizing:border-box; width:100%; padding:10px; border:1px solid #668380; border-radius:8px; }
+button { background:#135e56; color:white; border:0; padding:12px 18px; border-radius:8px; font:inherit; cursor:pointer; }
+button:disabled { background:#d3ddda; color:#50645f; cursor:default; }
+.actions { display:flex; gap:10px; margin:18px 0; } .consent { display:flex; gap:10px; }
+video { width:100%; max-height:270px; background:#152e2c; border-radius:12px; transform:scaleX(-1); }
+progress { width:100%; } :focus-visible { outline:3px solid #af7800; outline-offset:3px; }
