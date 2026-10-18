@@ -9,11 +9,13 @@ from app.models.patient import PatientProfile
 from app.models.trial_bookmark import TrialBookmark
 from app.models.user import User
 from app.models.medication import Medication
-from app.schemas.trials import BookmarkIn, Trial, TrialExplanation, TrialMatch
+from app.schemas.trials import BookmarkIn, MatchStatus, Trial, TrialExplanation, TrialMatch
 from app.core.errors import AppError
 from app.services.trials import cache, clinicaltrials_client as ct
 from app.services.trials.matching import match_trial
 from app.services.trials.simplify import explain_for_user
+from app.services.agent.engine import process, update_for, watched
+from app.services.agent.facts import effective_record
 from app.services.trials.snowflake import CortexUnavailable, cortex_search
 
 router = APIRouter(prefix="/trials", tags=["trials"])
@@ -73,8 +75,8 @@ async def matches(response: Response, user: User = Depends(get_current_user), db
         response.headers["X-Trials-Source"] = "snowflake_cortex"
         trials, summaries = ranked
         # The Cortex AI_COMPLETE one-liner fills the plain-language slot; still never an eligibility decision.
-        return [match_trial(profile, t).model_copy(update={"plain_language_summary": summaries.get(t.nct_id)})
-                for t in trials]
+        return await _with_agent(db, user, [match_trial(profile, t).model_copy(
+            update={"plain_language_summary": summaries.get(t.nct_id)}) for t in trials])
     response.headers["X-Trials-Source"] = "cache_or_live"
     trials = []
     for cond in profile.conditions:
@@ -87,7 +89,24 @@ async def matches(response: Response, user: User = Depends(get_current_user), db
         if t.nct_id not in seen:
             seen.add(t.nct_id)
             out.append(match_trial(profile, t))
-    return out
+    return await _with_agent(db, user, out)
+
+
+STATUS_ORDER = {MatchStatus.POTENTIAL_MATCH: 0, MatchStatus.MORE_INFORMATION_NEEDED: 1,
+                MatchStatus.KNOWN_CRITERIA_MISMATCH: 2}
+
+
+async def _with_agent(db: Session, user: User, results: list[TrialMatch]) -> list[TrialMatch]:
+    """Trials the patient has opened carry the agent's latest conclusion; best fits sort first."""
+    await process(db, user.id)
+    rows = watched(db, user.id)
+    if rows:
+        record, _, _ = effective_record(db, user.id)
+        for m in results:
+            if m.trial.nct_id in rows:
+                m.update = update_for(rows[m.trial.nct_id], record)
+                m.status = m.update.status
+    return sorted(results, key=lambda m: STATUS_ORDER[m.status])   # stable: keeps relevance within a status
 
 
 # NOTE: declared before "/{nct_id}" so "bookmarks" isn't captured as an id.

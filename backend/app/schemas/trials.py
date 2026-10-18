@@ -1,4 +1,5 @@
 # OWNER: Member 3
+from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 from pydantic import BaseModel, Field
@@ -32,6 +33,24 @@ class Trial(BaseModel):
     url: str
 
 
+class FixOption(BaseModel):
+    label: str                      # e.g. "I stopped taking Insulin"
+    facts: list[dict]               # send as-is to POST /api/agent/corrections
+
+
+class TrialUpdate(BaseModel):
+    """What CareFlow's agent currently thinks about a trial the patient opened, in patient-facing words."""
+    status: MatchStatus
+    label: str                      # "Could be a fit" | "We need to check" | "Not a fit right now"
+    previous_status: MatchStatus | None = None
+    previous_label: str | None = None
+    reason: str                     # one or two plain sentences
+    changed_at: datetime | None = None
+    is_new: bool = False            # changed since the patient last looked
+    provisional: bool = False       # Gemini was unavailable; will be re-checked
+    fix_options: list[FixOption] = []
+
+
 class TrialMatch(BaseModel):
     trial: Trial
     status: MatchStatus
@@ -41,6 +60,7 @@ class TrialMatch(BaseModel):
     needs_coordinator_confirmation: list[str] = []
     plain_language_summary: str | None = None   # Gemini-simplified; never an eligibility decision
     disclaimer: str = "Preliminary match only. Eligibility is decided by the study team."
+    update: TrialUpdate | None = None   # present once the patient has opened this trial's explanation
 
 
 class BookmarkIn(BaseModel):
@@ -54,9 +74,14 @@ class GeminiCriterion(BaseModel):
     original_text: Annotated[str, Field(min_length=1, max_length=1500)]
     plain_text: Annotated[str, Field(min_length=1, max_length=1000)]
     applies_to_patient: Literal["YES", "NO", "UNKNOWN"] = Field(
-        description="Does the patient record show this criterion describes the patient? UNKNOWN if the record is silent.")
+        description="YES if the record shows the patient has what this criterion describes (for an exclusion: the "
+                    "patient HAS the excluded condition or takes the excluded medication). NO if the record shows "
+                    "they do not. UNKNOWN if the record is silent.")
     evidence: Annotated[str, Field(max_length=500)] | None = Field(
         description="The record field supporting YES/NO, quoted from the record; null when UNKNOWN.")
+    evidence_source: Literal["profile", "medication", "patient_correction", "patient_note", "sensor_reading",
+                             "none"] = Field(
+        default="none", description="Which part of the patient record the evidence comes from; none when UNKNOWN.")
     question_for_coordinator: Annotated[str, Field(max_length=500)] | None
 
 
@@ -70,6 +95,7 @@ class GeminiTrialExplanation(BaseModel):
 class CriterionAssessment(GeminiCriterion):
     effect: Literal["supports", "conflicts", "unknown"]
     quote_verified: bool   # original_text found verbatim in the registry criteria
+    note: str | None = None  # why the backend changed Gemini's reading (e.g. sensor-only evidence)
 
 
 class TrialExplanation(BaseModel):
@@ -82,4 +108,6 @@ class TrialExplanation(BaseModel):
     questions_to_ask: list[str]
     missing_profile_fields: list[str]
     why_surfaced: list[str]
+    conflicts: list[dict] = []      # where the patient's sources disagreed, and which one the agent used
+    update: TrialUpdate | None = None
     disclaimer: str = "Preliminary screening only. Eligibility is decided by the study team."

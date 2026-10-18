@@ -11,6 +11,7 @@ from app.models.dose_event import DoseEvent
 from app.models.medication import Medication
 from app.models.user import User
 from app.schemas.medications import MedicationCreate, MedicationOut
+from app.services.agent.facts import record_event
 from app.services.scheduling.generator import generate_dose_times
 
 router = APIRouter(prefix="/medications", tags=["medications"])
@@ -27,6 +28,8 @@ def create(body: MedicationCreate, user: User = Depends(get_current_user), db: S
     db.flush()
     for when in generate_dose_times(body.schedule.times, body.schedule.duration_days, body.schedule.timezone):
         db.add(DoseEvent(medication_id=med.id, user_id=user.id, scheduled_at=when))
+    record_event(db, user.id, "medication_confirmed",
+                 f"You confirmed {body.name}" + (f" {body.strength}" if body.strength else "") + ".")
     db.commit()
     db.refresh(med)
     return med

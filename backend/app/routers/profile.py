@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.patient import PatientProfile
 from app.models.user import User
 from app.schemas.profile import ProfileOut, ProfileUpdate
+from app.services.agent.facts import record_event
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -30,6 +31,7 @@ def put_profile(body: ProfileUpdate, user: User = Depends(get_current_user), db:
     else:
         for k, v in body.model_dump().items():
             setattr(p, k, v)
+    record_event(db, user.id, "profile_updated", "You updated your profile.")
     db.commit()
     db.refresh(p)
     return p
