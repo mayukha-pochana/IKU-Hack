@@ -452,3 +452,18 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 ::view-transition-group(pz-tabbar), ::view-transition-group(pz-sidebar) { animation-duration: .3s; }
 ::view-transition-group(pz-logo) { animation: none; }
 @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
+/* Flip card (saved medicines): both faces share one grid cell, so the card is as tall as the taller face. */
+.pz-flip { perspective: 1200px; }
+.pz-flip__inner { display: grid; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.22, 1, .36, 1); }
+.pz-flip[data-flipped="true"] .pz-flip__inner { transform: rotateY(180deg); }
+.pz-flip__face { grid-area: 1 / 1; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.pz-flip__back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .pz-flip__inner { transition: none; transform: none !important; }
+  .pz-flip__back { transform: none; }
+  .pz-flip[data-flipped="false"] .pz-flip__back, .pz-flip[data-flipped="true"] .pz-flip__face:not(.pz-flip__back) { visibility: hidden; }
+}
+/* "Tap to flip" hint on medicine cards: the arrow gives a small turn now and then, as a nudge. */
+.pz-flip-hint svg { animation: pz-hint-turn 4s ease-in-out infinite; }
+@keyframes pz-hint-turn { 0%, 80%, 100% { transform: rotate(0); } 90% { transform: rotate(180deg); } }
+@media (prefers-reduced-motion: reduce) { .pz-flip-hint svg { animation: none; } }

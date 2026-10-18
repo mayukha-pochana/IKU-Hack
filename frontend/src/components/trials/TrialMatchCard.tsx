@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { CircleDot, CircleOff, MapPin, PoundSterling } from "lucide-react";
+import { ArrowRight, CircleDot, CircleOff, MapPin, PoundSterling } from "lucide-react";
 import { isPaid } from "@/lib/payment";
 import type { Trial, TrialMatch, TrialUpdate } from "@/types";
 import { MatchBadge } from "@/components/ui/pz";
@@ -48,27 +48,49 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
   const [update, setUpdate] = useState<TrialUpdate | null | undefined>(match?.update);
   const status = update?.status ?? match?.status;
   return (
-    <article className="pz-card">
-      <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <article className="flex flex-col gap-3 rounded-[22px] border border-line bg-surface-raised p-4 shadow-[0_4px_16px_rgba(59,47,143,0.05)] sm:p-5">
+      {/* One quiet row: the match badge, then phase and recruitment as plain text. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {status ? <MatchBadge status={status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
-        {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
-        <TrialStatusBadge status={t.status} />
+        <span className="flex items-center gap-1.5 text-caption text-ink-muted">
+          {t.phases.map((p) => <span key={p}>{phaseLabel(p)}</span>)}
+          {t.phases.length > 0 && t.status && <span aria-hidden="true">·</span>}
+          {t.status && <span className={t.status === "RECRUITING" ? "text-mint-text" : "text-danger"}>{t.status === "RECRUITING" ? "Recruiting" : statusLabel(t.status)}</span>}
+        </span>
       </div>
-      <h3 className="pz-card__title">{t.title}</h3>
+      <h3 className="text-[18px] font-semibold leading-6 tracking-[-0.01em]">{t.title}</h3>
+
+      {/* Key facts as small chips, so they don't read as one more sentence. */}
       {(place || isPaid(t)) && (
-        <p className="pz-card__meta flex flex-wrap items-center gap-x-3 gap-y-1">
-          {place && <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</span>}
-          {isPaid(t) && <span className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2 py-0.5 font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={13} />Pays participants</span>}
-        </p>
+        <ul className="flex flex-wrap gap-1.5" aria-label="Key facts">
+          {place && <li className="inline-flex items-center gap-1 rounded-pill bg-surface px-2.5 py-1 text-caption text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]"><MapPin aria-hidden="true" size={13} />{place}</li>}
+          {isPaid(t) && <li className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2.5 py-1 text-caption font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={12} />Pays participants</li>}
+        </ul>
       )}
-      {update && <UpdateDetails update={update} />}
-      {update && <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />}
-      {!update && match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
-      {!match && t.brief_summary && <p className="pz-card__body line-clamp-3 text-ink-muted">{t.brief_summary}</p>}
-      <div className="pz-card__actions">
-        <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</Link>
+
+      {/* What changed (trial updates) in its own box, with the fix right there. */}
+      {update && (
+        <div className="flex flex-col gap-3 rounded-[16px] bg-violet-soft p-3">
+          <UpdateDetails update={update} />
+          <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />
+        </div>
+      )}
+
+      {/* Why it's on the list. */}
+      {!update && match && match.why_surfaced.length > 0 && (
+        <div className="rounded-[16px] bg-surface p-3 shadow-[inset_0_0_0_1px_var(--line)]">
+          <p className="mb-0.5 text-caption font-semibold text-ink-muted">Why you&apos;re seeing this</p>
+          <p className="text-label font-normal leading-6 text-ink">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>
+        </div>
+      )}
+      {!match && t.brief_summary && <p className="line-clamp-3 text-label font-normal text-ink-muted">{t.brief_summary}</p>}
+
+      <div className="flex flex-col gap-2 pt-1">
+        <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm w-full">
+          Explain this trial<ArrowRight aria-hidden="true" size={16} />
+        </Link>
+        {match && <p className="text-center text-[12px] leading-4 text-ink-muted">{match.disclaimer}</p>}
       </div>
-      {match && <p className="text-caption text-ink-muted">{match.disclaimer}</p>}
     </article>
   );
 }
