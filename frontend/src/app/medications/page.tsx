@@ -34,9 +34,12 @@ export default function MedicationsPage() {
       </section>
 
       <section aria-labelledby="meds-h" className="flex flex-col gap-3">
-        <h2 id="meds-h" className="text-h2">Saved medicines</h2>
+        <div>
+          <h2 id="meds-h" className="text-h2">Saved medicines</h2>
+          <p className="text-label font-normal text-ink-muted">Log scheduled doses in your blister pack above. Medicines you take when needed have their own Log dose button.</p>
+        </div>
         {!meds ? <Loader label="Loading your medicines…" /> : meds.length ? (
-          <div className="grid gap-4 md:grid-cols-2">{meds.map((m) => <MedicationCard key={m.id} med={m} onChanged={bump} />)}</div>
+          <div className="grid gap-3 md:grid-cols-2">{meds.map((m) => <MedicationCard key={m.id} med={m} onChanged={bump} />)}</div>
         ) : <p className="text-ink-muted">No medicines yet. Scan a prescription above to add your first.</p>}
       </section>
     </DashboardLayout>

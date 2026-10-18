@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { CircleDot, CircleOff, MapPin, PoundSterling } from "lucide-react";
+import { ArrowRight, CircleDot, CircleOff, MapPin, PoundSterling } from "lucide-react";
 import { isPaid } from "@/lib/payment";
 import type { Trial, TrialMatch, TrialUpdate } from "@/types";
 import { MatchBadge } from "@/components/ui/pz";
@@ -48,27 +48,33 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
   const [update, setUpdate] = useState<TrialUpdate | null | undefined>(match?.update);
   const status = update?.status ?? match?.status;
   return (
-    <article className="pz-card">
-      <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <article className="flex flex-col gap-3 rounded-[22px] border border-line bg-surface-raised p-4 shadow-[0_4px_16px_rgba(59,47,143,0.05)] sm:p-5">
+      {/* One quiet row: the match badge, then phase and recruitment as plain text. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {status ? <MatchBadge status={status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
-        {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
-        <TrialStatusBadge status={t.status} />
+        <span className="flex items-center gap-1.5 text-caption text-ink-muted">
+          {t.phases.map((p) => <span key={p}>{phaseLabel(p)}</span>)}
+          {t.phases.length > 0 && t.status && <span aria-hidden="true">·</span>}
+          {t.status && <span className={t.status === "RECRUITING" ? "text-mint-text" : "text-danger"}>{t.status === "RECRUITING" ? "Recruiting" : statusLabel(t.status)}</span>}
+        </span>
       </div>
-      <h3 className="pz-card__title">{t.title}</h3>
+      <h3 className="text-[18px] font-semibold leading-6 tracking-[-0.01em]">{t.title}</h3>
       {(place || isPaid(t)) && (
-        <p className="pz-card__meta flex flex-wrap items-center gap-x-3 gap-y-1">
-          {place && <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</span>}
-          {isPaid(t) && <span className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2 py-0.5 font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={13} />Pays participants</span>}
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-muted">
+          {place && <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" size={13} />{place}</span>}
+          {isPaid(t) && <span className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2 py-0.5 font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={12} />Pays participants</span>}
         </p>
       )}
       {update && <UpdateDetails update={update} />}
       {update && <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />}
-      {!update && match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
-      {!match && t.brief_summary && <p className="pz-card__body line-clamp-3 text-ink-muted">{t.brief_summary}</p>}
-      <div className="pz-card__actions">
-        <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</Link>
+      {!update && match && match.why_surfaced.length > 0 && <p className="line-clamp-2 text-label font-normal text-ink">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
+      {!match && t.brief_summary && <p className="line-clamp-3 text-label font-normal text-ink-muted">{t.brief_summary}</p>}
+      <div className="flex items-end justify-between gap-3 border-t border-line pt-3">
+        {match ? <p className="text-[12px] leading-4 text-ink-muted">{match.disclaimer}</p> : <span />}
+        <Link href={`/trials/${t.nct_id}`} className="group inline-flex shrink-0 items-center gap-1 text-label font-semibold text-violet-text">
+          Explain<span className="max-sm:hidden"> this trial</span><ArrowRight aria-hidden="true" size={16} className="transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </div>
-      {match && <p className="text-caption text-ink-muted">{match.disclaimer}</p>}
     </article>
   );
 }
