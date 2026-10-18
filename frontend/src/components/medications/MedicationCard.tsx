@@ -1,4 +1,4 @@
-// OWNER: Member 2 - one confirmed medication and its confirmed schedule.
+// OWNER: Member 2 - one confirmed medication.
 import { Pill } from "lucide-react";
 import type { Medication } from "@/types";
 

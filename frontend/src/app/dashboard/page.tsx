@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, NotebookPen } from "lucide-react";
+import { ArrowRight, Clock, NotebookPen, Search } from "lucide-react";
 import { checkins, profile, schedule, trials } from "@/lib/api";
 import type { Checkin, Dose, TrialMatch } from "@/types";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -30,27 +30,43 @@ export default function Dashboard() {
   }, []);
   useEffect(() => { schedule.week().then((w) => setNext(nextDose(w) ?? null)).catch(() => setNext(null)); }, [tick]);
 
+  const possibleList = matches?.filter((m) => m.status === "POTENTIAL_MATCH") ?? [];
+  const possible = possibleList.length;
+  // One match: open that trial straight away. More: open the list.
+  const matchHref = possible === 1 ? `/trials/${encodeURIComponent(possibleList[0].trial.nct_id)}` : "/trials";
   const shown = matches?.filter((m) => m.status !== "KNOWN_CRITERIA_MISMATCH").slice(0, 3) ?? [];
   return (
     <DashboardLayout>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h1">{greeting()}{name && `, ${name}`}</h1>
-        <p className="text-ink-muted">Here&apos;s your day at a glance.</p>
-      </header>
+      {/* Hero: violet blending into mint, with today's key facts as frosted chips. */}
+      <section className="pz-hero" aria-labelledby="hello-h">
+        <p className="text-label font-normal opacity-85">{greeting()}</p>
+        <h1 id="hello-h" className="text-[34px] font-semibold leading-[40px] tracking-[-0.02em] md:text-display">{name || "Welcome back"}</h1>
+        <p className="mt-1 text-body-lg opacity-90">Here&apos;s your day at a glance.</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <span className="pz-hero__chip"><Clock aria-hidden="true" size={18} />
+            <span>{next === undefined ? "Checking your next dose…" : next ? <>Next dose <strong className="font-semibold">{time24(next.scheduled_at)}</strong> · {next.medication_name}</> : "Nothing else scheduled this week"}</span>
+          </span>
+          {matches && possible > 0 && (
+            <Link href={matchHref} className="pz-hero__chip transition-colors hover:bg-white/25"><Search aria-hidden="true" size={18} /><span>{possible} possible trial {possible === 1 ? "match" : "matches"}</span><ArrowRight aria-hidden="true" size={16} /></Link>
+          )}
+        </div>
+      </section>
 
       <TrialsChangedNotice />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-8">
           <section aria-labelledby="today-h" className="flex flex-col gap-3">
-            <h2 id="today-h" className="text-h2">Your medications this week</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="today-h" className="whitespace-nowrap text-[20px] font-semibold leading-7 md:text-h2">Your medications this week</h2>
+            </div>
             <div className="pz-card"><MedicationCalendar showScanLink refreshKey={tick} onDoseChange={() => setTick((t) => t + 1)} /></div>
           </section>
 
           <section aria-labelledby="trials-h" className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 id="trials-h" className="flex items-center gap-1 text-h2">Your trial matches <ClinicalTrialInfo /></h2>
-              <Link href="/trials" className="pz-btn pz-btn--ghost pz-btn--sm whitespace-nowrap">See all <ArrowRight aria-hidden="true" size={16} /></Link>
+              <h2 id="trials-h" className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[20px] font-semibold leading-7 md:text-h2">Your trial matches <ClinicalTrialInfo /></h2>
+              <Link href="/trials" className="pz-btn pz-btn--ghost pz-btn--sm shrink-0 whitespace-nowrap max-sm:!px-2">See all <ArrowRight aria-hidden="true" size={16} /></Link>
             </div>
             {!matches ? <Loader label="Checking trials for you…" /> : shown.length ? (
               <div className="flex flex-col gap-3">{shown.map((m) => <TrialMatchCard key={m.trial.nct_id} match={m} />)}</div>
@@ -61,13 +77,6 @@ export default function Dashboard() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <section aria-labelledby="next-h" className="pz-card bg-violet-soft">
-            <h2 id="next-h" className="text-label text-ink-muted">Next dose</h2>
-            {next === undefined ? <p className="text-ink-muted">Loading…</p> : next ? (
-              <div className="pz-dose"><time className="pz-dose__time" dateTime={next.scheduled_at}>{time24(next.scheduled_at)}</time><p className="pz-dose__name">{next.medication_name}</p></div>
-            ) : <p className="pz-card__body">Nothing else scheduled this week.</p>}
-          </section>
-
           <section aria-labelledby="ci-h" className="pz-card">
             <h2 id="ci-h" className="pz-card__title">Daily diary</h2>
             <p className="pz-card__body text-ink-muted">{last ? `Last entry: ${dateTimeUK(last.recorded_at)}.` : "How are you feeling today? Add a quick note, and heart rate and breathing if you like."}</p>

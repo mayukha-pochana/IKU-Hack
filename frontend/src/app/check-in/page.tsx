@@ -16,10 +16,7 @@ export default function CheckInPage() {
       </header>
       <PresageCameraCheckIn onSaved={() => setTick((t) => t + 1)} />
       <CheckinOutcome refreshKey={tick} />
-      <section aria-labelledby="hist-h" className="flex flex-col gap-3">
-        <h2 id="hist-h" className="text-h2">Past entries</h2>
-        <HealthHistory refreshKey={tick} />
-      </section>
+      <HealthHistory refreshKey={tick} />
     </DashboardLayout>
   );
 }

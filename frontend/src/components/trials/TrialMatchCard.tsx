@@ -2,7 +2,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { CircleDot, CircleOff, MapPin } from "lucide-react";
+import { CircleDot, CircleOff, MapPin, PoundSterling } from "lucide-react";
+import { isPaid } from "@/lib/payment";
 import type { Trial, TrialMatch, TrialUpdate } from "@/types";
 import { MatchBadge } from "@/components/ui/pz";
 import { FixIt, UpdateDetails } from "./TrialUpdate";
@@ -48,13 +49,18 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
   const status = update?.status ?? match?.status;
   return (
     <article className="pz-card">
-      <div className="pz-card__row">
+      <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {status ? <MatchBadge status={status} /> : <span className="pz-badge pz-badge--neutral">Search result</span>}
         {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
         <TrialStatusBadge status={t.status} />
       </div>
       <h3 className="pz-card__title">{t.title}</h3>
-      {place && <p className="pz-card__meta inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</p>}
+      {(place || isPaid(t)) && (
+        <p className="pz-card__meta flex flex-wrap items-center gap-x-3 gap-y-1">
+          {place && <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" size={14} />{place}</span>}
+          {isPaid(t) && <span className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2 py-0.5 font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={13} />Pays participants</span>}
+        </p>
+      )}
       {update && <UpdateDetails update={update} />}
       {update && <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />}
       {!update && match && match.why_surfaced.length > 0 && <p className="pz-card__body">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}

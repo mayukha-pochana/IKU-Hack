@@ -29,7 +29,9 @@ export default function TrialPage() {
 
   return (
     <DashboardLayout>
-      <Link href="/trials" className="pz-btn pz-btn--ghost pz-btn--sm self-start"><ArrowLeft aria-hidden="true" size={16} />All trials</Link>
+      <Link href="/trials" className="group inline-flex min-h-tap items-center gap-2.5 self-start text-body-lg font-semibold text-violet-text">
+        <span className="flex h-10 w-10 items-center justify-center rounded-pill bg-violet-soft transition-transform group-hover:-translate-x-0.5"><ArrowLeft aria-hidden="true" size={20} /></span>All trials
+      </Link>
       {err && <ErrorState message={err} onRetry={() => setRetry(retry + 1)} />}
       {!t && !err && <Loader label="Loading this trial…" />}
       {t && <TrialDetails trial={t} match={match} />}
