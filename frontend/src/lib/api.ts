@@ -70,6 +70,7 @@ export const trials = {
     return { trials: await r.json(), source: r.headers.get("X-Trials-Source") === "cache" ? "cache" : "live" };
   },
   get: (nct: string) => req<T.Trial>(`/trials/${nct}`),
+  explain: (nct: string) => req<T.TrialExplanation>(`/trials/${encodeURIComponent(nct)}/explain`, { method: "POST" }),
   bookmark: (nct_id: string) => req("/trials/bookmarks", json("POST", { nct_id })),
   bookmarks: () => req<{ nct_id: string; created_at: string }[]>("/trials/bookmarks"),
 };

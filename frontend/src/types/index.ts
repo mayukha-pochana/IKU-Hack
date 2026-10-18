@@ -37,6 +37,18 @@ export interface TrialMatch {
   missing_information: string[]; needs_coordinator_confirmation: string[];
   plain_language_summary: string | null; disclaimer: string;
 }
+// POST /trials/{nct_id}/explain (Gemini). `effect` is derived by the backend, never an eligibility decision.
+export type CriterionEffect = "supports" | "conflicts" | "unknown";
+export interface CriterionAssessment {
+  kind: "inclusion" | "exclusion"; original_text: string; plain_text: string;
+  applies_to_patient: "YES" | "NO" | "UNKNOWN"; evidence: string | null; question_for_coordinator: string | null;
+  effect: CriterionEffect; quote_verified: boolean;
+}
+export interface TrialExplanation {
+  nct_id: string; title: string; url: string; status: MatchStatus; plain_summary: string;
+  criteria: CriterionAssessment[]; questions_to_ask: string[]; missing_profile_fields: string[];
+  why_surfaced: string[]; disclaimer: string;
+}
 export interface AdherenceSummary {
   scheduled_doses: number; reported_taken: number; reported_missed: number;
   reported_skipped: number; reported_adherence_percentage: number | null; note: string;

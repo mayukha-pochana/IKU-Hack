@@ -1,13 +1,14 @@
 // OWNER: Member 2 - trial overview, location, criteria, known mismatches, open questions and the official link.
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
 import { trials } from "@/lib/api";
-import type { Trial, TrialMatch } from "@/types";
-import { MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
+import type { Trial, TrialExplanation, TrialMatch } from "@/types";
+import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
 import { ReadAloud } from "@/components/ui/ReadAloud";
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
+import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
 
 function List({ items, icon: I, tone }: { items: string[]; icon: typeof Check; tone: string }) {
   return <ul className="flex flex-col gap-2">{items.map((x) => <li key={x} className="flex gap-2"><I aria-hidden="true" size={20} className={`mt-0.5 shrink-0 ${tone}`} />{x}</li>)}</ul>;
@@ -29,8 +30,21 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Gemini explanation; on any error we keep the match-based view below.
+  const [explanation, setExplanation] = useState<TrialExplanation | null>(null);
+  const [explaining, setExplaining] = useState(true);
   const uk = t.locations.filter((l) => l.country === "United Kingdom");
   const places = (uk.length ? uk : t.locations).slice(0, 8);
+
+  useEffect(() => {
+    let live = true;
+    setExplanation(null); setExplaining(true);
+    trials.explain(t.nct_id).then((x) => { if (live) setExplanation(x); }).catch(() => {}).finally(() => { if (live) setExplaining(false); });
+    return () => { live = false; };
+  }, [t.nct_id]);
+  const x = explanation;
+  const status = x?.status ?? match?.status;
+  const summary = x?.plain_summary ?? match?.plain_language_summary ?? null;
 
   async function bookmark() {
     setBusy(true); setErr(null);
@@ -41,7 +55,7 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
     <article className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <div className="pz-card__row">
-          {match && <MatchBadge status={match.status} />}
+          {status && <MatchBadge status={status} />}
           {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
           {t.phases.length > 0 && <PhaseInfo />}
           <TrialStatusBadge status={t.status} />
@@ -60,14 +74,24 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
 
       <Notice>This is a preliminary match, not a confirmation of eligibility. The trial team makes the final decision.</Notice>
 
-      {(match?.plain_language_summary || t.brief_summary) && (
+      {explaining && <Loader label="Explaining this trial…" />}
+
+      {!explaining && (summary || t.brief_summary) && (
         <section className="pz-card"><h2 className="pz-card__title">What this trial is about</h2>
-          <p className="text-body-lg">{match?.plain_language_summary ?? t.brief_summary}</p>
-          {match?.plain_language_summary && t.brief_summary && <details><summary className="pz-link cursor-pointer">Official summary</summary><p className="mt-2 text-ink-muted">{t.brief_summary}</p></details>}
+          <p className="text-body-lg">{summary ?? t.brief_summary}</p>
+          {summary && t.brief_summary && <details><summary className="pz-link cursor-pointer">Official summary</summary><p className="mt-2 text-ink-muted">{t.brief_summary}</p></details>}
         </section>
       )}
 
-      {match && (
+      {x && (
+        <>
+          {x.why_surfaced.length > 0 && <section className="pz-card"><h2 className="pz-card__title">Why it was shown</h2><List items={x.why_surfaced} icon={Check} tone="text-success" /></section>}
+          <ExplanationCriteria criteria={x.criteria} />
+          <ExplanationExtras explanation={x} />
+        </>
+      )}
+
+      {!explaining && !x && match && (
         <div className="grid gap-4 md:grid-cols-2">
           {match.why_surfaced.length > 0 && <section className="pz-card"><h2 className="pz-card__title">Why it was shown</h2><List items={match.why_surfaced} icon={Check} tone="text-success" /></section>}
           {match.relevant_criteria.length > 0 && <section className="pz-card"><h2 className="pz-card__title">Requirements that look relevant to you</h2><List items={match.relevant_criteria} icon={match.status === "KNOWN_CRITERIA_MISMATCH" ? X : Check} tone={match.status === "KNOWN_CRITERIA_MISMATCH" ? "text-danger" : "text-success"} /></section>}
