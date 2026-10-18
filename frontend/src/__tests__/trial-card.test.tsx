@@ -56,9 +56,10 @@ describe("TrialMatchCard with a trial update", () => {
     expect(screen.getByText("Not right? Fix it")).toBeTruthy();
     expect(container.textContent).not.toMatch(/agent|event|conflict/i);
   });
-  it("says it will double-check instead of offering fixes while provisional", () => {
+  it("keeps the reason and fixes visible while saying it will double-check", () => {
     render(<TrialMatchCard match={{ ...match, update: { ...update, provisional: true } }} />);
     expect(screen.getByText(/double-check this shortly/)).toBeTruthy();
-    expect(screen.queryByText("Not right? Fix it")).toBeNull();
+    expect(screen.getByText(/Insulin now means/)).toBeTruthy();
+    expect(screen.getByText("Not right? Fix it")).toBeTruthy();
   });
 });

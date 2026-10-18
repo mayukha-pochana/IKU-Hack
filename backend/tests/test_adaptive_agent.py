@@ -147,7 +147,7 @@ def test_gemini_outage_gives_provisional_answer_instead_of_stalling(world):
     world.gemini_down = True
     confirm_insulin(world.client)
     _, c = conclusion(world.client)
-    assert c["provisional"] is True and "double-check this shortly" in c["reason"]
+    assert c["provisional"] is True and "double-check the rest shortly" in c["reason"]
     assert c["status"] == "POTENTIAL_MATCH"              # kept prior criteria; deterministic checks still ran
 
     world.gemini_down = False                           # next event recovers and catches up
@@ -252,3 +252,45 @@ def test_correction_needs_text_or_facts(world):
 def test_checkin_without_consent_is_a_clear_422(world):
     r = world.client.post("/api/health-checkins", json={"measurement_source": "none", "consent_given": False})
     assert r.status_code == 422 and "Consent is required" in r.json()["error"]["details"]["errors"][0]["msg"]
+
+
+async def test_parallel_requests_share_one_pass_and_one_gemini_call(world, db):
+    """The dashboard fires several requests at once; they must not race each other's re-checks."""
+    import asyncio
+    from app.services.agent.engine import process
+    world.client.post(f"/api/trials/{NCT}/explain")
+    confirm_insulin(world.client)
+    before = world.screenings
+    handled = await asyncio.gather(process(db, USER.id), process(db, USER.id), process(db, USER.id))
+    assert sorted(len(h) for h in handled) == [0, 0, 1]      # one pass did the work; the others found nothing left
+    assert world.screenings - before == 1
+    _, c = conclusion(world.client)
+    assert c["status"] == "KNOWN_CRITERIA_MISMATCH" and c["provisional"] is False
+
+
+def test_age_rules_are_checked_exactly_not_by_the_model():
+    from app.schemas.trials import CriterionAssessment
+    from app.services.trials.simplify import age_bounds, check_age
+    assert age_bounds("Adults aged 18 to 65 years") == (18, 65)
+    assert age_bounds("Must be 18 years of age or older") == (18, None)
+    assert age_bounds("Diabetes for at least 2 years") is None          # a duration, not an age
+    wrong = CriterionAssessment(kind="inclusion", original_text="Adults aged 18 to 65 years", plain_text="You must be 18 to 65",
+                                applies_to_patient="NO", evidence="age: 52", evidence_source="profile",
+                                question_for_coordinator=None, effect="conflicts", quote_verified=True)
+    fixed = check_age(wrong, 52)
+    assert (fixed.applies_to_patient, fixed.effect, fixed.note) == ("YES", "supports", "Checked against your age.")
+    assert check_age(wrong, 70).effect == "conflicts" and check_age(wrong, None) is wrong
+
+
+def test_correction_still_applies_when_gemini_is_down(world):
+    """The answer follows the patient's correction straight away; Gemini confirms later."""
+    world.client.post(f"/api/trials/{NCT}/explain")
+    confirm_insulin(world.client)
+    _, c = conclusion(world.client)
+    assert c["status"] == "KNOWN_CRITERIA_MISMATCH"
+    world.gemini_down = True
+    world.client.post("/api/agent/corrections", json={"label": "I stopped taking Insulin",
+                                                      "facts": [{"type": "medication_stopped", "value": "Insulin"}]})
+    _, c = conclusion(world.client)
+    assert c["status"] == "POTENTIAL_MATCH" and c["provisional"] is True
+    assert "counts in your favour" in c["reason"] and "double-check the rest shortly" in c["reason"]
