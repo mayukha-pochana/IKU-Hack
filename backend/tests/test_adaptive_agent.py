@@ -147,7 +147,7 @@ def test_gemini_outage_gives_provisional_answer_instead_of_stalling(world):
     world.gemini_down = True
     confirm_insulin(world.client)
     _, c = conclusion(world.client)
-    assert c["provisional"] is True and "double-check this shortly" in c["reason"]
+    assert c["provisional"] is True and "double-check the rest shortly" in c["reason"]
     assert c["status"] == "POTENTIAL_MATCH"              # kept prior criteria; deterministic checks still ran
 
     world.gemini_down = False                           # next event recovers and catches up
@@ -211,7 +211,7 @@ def test_patient_facing_update_flow(world):
     assert (u["nct_id"], u["label"], u["previous_label"], u["is_new"]) == (
         NCT, "Not a fit right now", "Could be a fit", True)
     fix = u["fix_options"][0]
-    assert fix == {"label": "I stopped taking Insulin", "facts": [{"type": "medication_stopped", "value": "Insulin"}]}
+    assert fix == {"label": "I'm not taking Insulin", "facts": [{"type": "medication_stopped", "value": "Insulin"}]}
 
     world.client.get("/api/profile")   # the trial list shows the same update, worst fits last
     matches_update = world.client.post(f"/api/trials/{NCT}/explain").json()["update"]
@@ -221,9 +221,9 @@ def test_patient_facing_update_flow(world):
     assert r.status_code == 200, r.text
     u = world.client.get("/api/agent/updates").json()["updates"][0]
     assert u["label"] == "Could be a fit" and u["previous_label"] == "Not a fit right now"
-    assert u["fix_options"][0]["label"] == "I'm taking Insulin again"     # undo is one tap too
+    assert u["fix_options"][0]["label"] == "I am taking Insulin"     # undo is one tap too
     timeline = world.client.get("/api/agent/timeline").json()
-    assert timeline[0]["summary"] == "You told us: I stopped taking Insulin"
+    assert timeline[0]["summary"] == "You told us: I'm not taking Insulin"
 
     assert world.client.post("/api/agent/updates/seen", json={"nct_ids": [NCT]}).status_code == 204
     assert world.client.get("/api/agent/updates").json()["new_count"] == 0
@@ -252,3 +252,82 @@ def test_correction_needs_text_or_facts(world):
 def test_checkin_without_consent_is_a_clear_422(world):
     r = world.client.post("/api/health-checkins", json={"measurement_source": "none", "consent_given": False})
     assert r.status_code == 422 and "Consent is required" in r.json()["error"]["details"]["errors"][0]["msg"]
+
+
+async def test_parallel_requests_share_one_pass_and_one_gemini_call(world, db):
+    """The dashboard fires several requests at once; they must not race each other's re-checks."""
+    import asyncio
+    from app.services.agent.engine import process
+    world.client.post(f"/api/trials/{NCT}/explain")
+    confirm_insulin(world.client)
+    before = world.screenings
+    handled = await asyncio.gather(process(db, USER.id), process(db, USER.id), process(db, USER.id))
+    assert sorted(len(h) for h in handled) == [0, 0, 1]      # one pass did the work; the others found nothing left
+    assert world.screenings - before == 1
+    _, c = conclusion(world.client)
+    assert c["status"] == "KNOWN_CRITERIA_MISMATCH" and c["provisional"] is False
+
+
+def test_age_rules_are_checked_exactly_not_by_the_model():
+    from app.schemas.trials import CriterionAssessment
+    from app.services.trials.simplify import age_bounds, check_age
+    assert age_bounds("Adults aged 18 to 65 years") == (18, 65)
+    assert age_bounds("Must be 18 years of age or older") == (18, None)
+    assert age_bounds("Diabetes for at least 2 years") is None          # a duration, not an age
+    wrong = CriterionAssessment(kind="inclusion", original_text="Adults aged 18 to 65 years", plain_text="You must be 18 to 65",
+                                applies_to_patient="NO", evidence="age: 52", evidence_source="profile",
+                                question_for_coordinator=None, effect="conflicts", quote_verified=True)
+    fixed = check_age(wrong, 52)
+    assert (fixed.applies_to_patient, fixed.effect, fixed.note) == ("YES", "supports", "Checked against your age.")
+    assert check_age(wrong, 70).effect == "conflicts" and check_age(wrong, None) is wrong
+
+
+def test_correction_still_applies_when_gemini_is_down(world):
+    """The answer follows the patient's correction straight away; Gemini confirms later."""
+    world.client.post(f"/api/trials/{NCT}/explain")
+    confirm_insulin(world.client)
+    _, c = conclusion(world.client)
+    assert c["status"] == "KNOWN_CRITERIA_MISMATCH"
+    world.gemini_down = True
+    world.client.post("/api/agent/corrections", json={"label": "I'm not taking Insulin",
+                                                      "facts": [{"type": "medication_stopped", "value": "Insulin"}]})
+    _, c = conclusion(world.client)
+    assert c["status"] == "POTENTIAL_MATCH" and c["provisional"] is True
+    assert "counts in your favour" in c["reason"] and "double-check the rest shortly" in c["reason"]
+
+
+def test_brand_names_still_link_to_the_rule_they_break():
+    """A scanned box gives "Toujeo SoloStar (Insulin Glargine)"; the trial rule only says "insulin"."""
+    from types import SimpleNamespace as NS
+    from app.schemas.trials import CriterionAssessment
+    from app.services.agent.engine import apply_known_facts, fix_options, mentions
+    brand = "Toujeo SoloStar (Insulin Glargine)"
+    assert mentions(brand, "you cannot be taking insulin") and not mentions(brand, "solution for injection")
+    rule = dict(kind="exclusion", original_text="Use of insulin within 3 months", plain_text="You cannot be taking insulin",
+                applies_to_patient="YES", evidence=brand, evidence_source="medication", question_for_coordinator=None,
+                effect="conflicts", quote_verified=True, note=None)
+    record = {"confirmed_medications": [{"name": "Metformin"}, {"name": brand}], "medications_patient_says_stopped": [],
+              "conditions": ["Type 2 diabetes"]}
+    assert fix_options(NS(criteria=[rule]), record)[0]["label"] == f"I'm not taking {brand}"
+    stopped = {"confirmed_medications": [{"name": "Metformin"}], "medications_patient_says_stopped": [brand]}
+    assert apply_known_facts([CriterionAssessment(**rule)], stopped)[0].effect == "supports"
+
+
+def test_stopping_a_medicine_removes_future_doses_and_updates_trials(world, db):
+    from app.models.dose_event import DoseEvent
+    from app.models.medication import Medication
+    world.client.post(f"/api/trials/{NCT}/explain")
+    confirm_insulin(world.client)
+    _, c = conclusion(world.client)
+    assert c["status"] == "KNOWN_CRITERIA_MISMATCH"
+    insulin = db.query(Medication).filter(Medication.name == "Insulin").one()
+    before = db.query(DoseEvent).filter(DoseEvent.medication_id == insulin.id).count()
+    r = world.client.post(f"/api/medications/{insulin.id}/stop")
+    assert r.status_code == 200 and r.json()["confirmed_schedule"]["stopped_at"]
+    db.expire_all()
+    remaining = db.query(DoseEvent).filter(DoseEvent.medication_id == insulin.id).all()
+    assert before > 0 and len(remaining) < before                  # future doses removed; history (if any) kept
+    body, c = conclusion(world.client)
+    assert c["status"] == "POTENTIAL_MATCH"                         # the trial comes back once insulin is stopped
+    assert world.client.get("/api/agent/timeline").json()[0]["summary"] == "You stopped Insulin."
+    assert world.client.post(f"/api/medications/{insulin.id}/stop").status_code == 200   # idempotent

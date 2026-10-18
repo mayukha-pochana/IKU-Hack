@@ -23,6 +23,7 @@ export type SchedulePattern = "daily" | "every_n_days" | "weekly" | "as_needed";
 export interface Schedule {
   pattern?: SchedulePattern; times: string[]; duration_days: number; timezone: string;
   interval_days?: number | null; weekdays?: number[] | null; // weekdays: 0 = Monday ... 6 = Sunday
+  stopped_at?: string | null; // set when the patient stops the medicine; future doses are removed
 }
 export interface ParsedPrescription {
   medication_name: string | null; strength: string | null; dose_instructions: string | null;

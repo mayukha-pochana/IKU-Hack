@@ -52,6 +52,8 @@ export const medications = {
   create: (m: T.MedicationCreate) => req<T.Medication>("/medications", json("POST", m)),
   /** As-needed medicines: record a dose at the moment it was taken. */
   logDose: (id: string) => req<T.Dose>(`/medications/${id}/doses`, { method: "POST" }),
+  /** Stop (or never start) a medicine: future doses are removed, history is kept. */
+  stop: (id: string) => req<T.Medication>(`/medications/${id}/stop`, { method: "POST" }),
 };
 export const schedule = {
   today: () => req<T.Dose[]>("/schedule/today"),

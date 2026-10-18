@@ -147,3 +147,18 @@ def test_week_covers_monday_to_sunday(client):
     days = {datetime.fromisoformat(d["scheduled_at"]).astimezone(LONDON).date()
             for d in client.get("/api/schedule/week").json()}
     assert all(d.isocalendar()[1] == datetime.now(LONDON).isocalendar()[1] for d in days)
+
+
+def test_adherence_history_counts_the_last_seven_local_days(client, db):
+    from datetime import timedelta
+    med = create(client, times=["08:00"], duration_days=1)
+    now = datetime.now(timezone.utc)
+    for days_ago, status in [(1, "TAKEN"), (1, "MISSED"), (3, "TAKEN"), (9, "TAKEN")]:
+        db.add(DoseEvent(medication_id=uuid.UUID(med["id"]), user_id=ME.id, scheduled_at=now - timedelta(days=days_ago),
+                         status=status))
+    db.commit()
+    hist = client.get("/api/adherence/history").json()
+    assert len(hist) == 7 and hist[-1]["day"] == datetime.now(LONDON).date().isoformat()
+    yesterday = hist[-2]
+    assert (yesterday["scheduled"], yesterday["taken"], yesterday["missed"]) == (2, 1, 1)
+    assert sum(d["scheduled"] for d in hist[:-1]) == 3   # the dose from 9 days ago is outside the window

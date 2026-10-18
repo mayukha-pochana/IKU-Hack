@@ -49,8 +49,14 @@ def effective_record(db: Session, user_id) -> tuple[dict, list[dict], str]:
     age = {"value": getattr(profile, "age", None), "at": profile_time, "source": "your profile"}
     conditions = {c.lower(): {"name": c, "at": profile_time, "source": "your profile", "present": True}
                   for c in (getattr(profile, "conditions", None) or [])}
-    medications = {m.name.lower(): {"name": m.name, "strength": m.strength, "at": _utc(m.created_at),
-                                    "source": "your confirmed medication list", "taking": True} for m in meds}
+    medications = {}
+    for m in meds:
+        stopped_at = (m.confirmed_schedule or {}).get("stopped_at")
+        medications[m.name.lower()] = (
+            {"name": m.name, "strength": m.strength, "at": _utc(datetime.fromisoformat(stopped_at)),
+             "source": "your medication list (stopped)", "taking": False} if stopped_at else
+            {"name": m.name, "strength": m.strength, "at": _utc(m.created_at),
+             "source": "your confirmed medication list", "taking": True})
     notes, conflicts = [], []
 
     def resolve(topic: str, current: dict | None, new: dict, kept_label: str, old_label: str) -> bool:
