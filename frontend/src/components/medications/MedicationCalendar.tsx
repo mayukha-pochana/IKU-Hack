@@ -81,7 +81,7 @@ function Pack({ name, doses, colour, amount, often, route, saving, onToggle }: {
         <p className="text-h3">{name}</p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="pz-badge pz-badge--neutral">{ROUTE_LABEL[route]}</span>
-          {often && <span className="text-label font-normal text-ink-muted">{often.charAt(0).toUpperCase() + often.slice(1)}</span>}
+          {often && <span className="text-label font-normal text-ink-muted">{often.charAt(0).toUpperCase() + often.slice(1).replace(/_/g, " ")}</span>}
           {amount && <span className="text-label font-normal text-ink-muted">{amount.text} each time</span>}
         </div>
       </div>

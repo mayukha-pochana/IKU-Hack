@@ -63,6 +63,13 @@ async def generate_json_from_image(prompt: str, image: bytes, mime: str, schema:
                            schema)
 
 
+async def generate_json_from_images(prompt: str, images: list[tuple[bytes, str]], schema: dict | None = None) -> str:
+    """Several photos of the same object (e.g. the sides of a bottle label) in one request."""
+    parts = [{"text": prompt}] + [{"inlineData": {"mimeType": mime, "data": base64.b64encode(data).decode()}}
+                                  for data, mime in images]
+    return await _generate(parts, schema)
+
+
 async def generate_json(prompt: str, schema: dict) -> str:
     return await _generate([{"text": prompt}], schema)
 

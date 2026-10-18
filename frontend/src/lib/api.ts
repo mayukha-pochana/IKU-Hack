@@ -44,11 +44,14 @@ export const profile = {
 
 // ---- Medications, schedule, adherence (Member 2) ----
 export const prescriptions = {
-  parse: (file: File) => { const f = new FormData(); f.append("file", file); return req<T.ParsedPrescription>("/prescriptions/parse", { method: "POST", body: f }); },
+  /** 1 to 3 photos of the same label (sides of a bottle). */
+  parse: (photos: File[]) => { const f = new FormData(); photos.forEach((p) => f.append("files", p)); return req<T.ParsedPrescription>("/prescriptions/parse", { method: "POST", body: f }); },
 };
 export const medications = {
   list: () => req<T.Medication[]>("/medications"),
   create: (m: T.MedicationCreate) => req<T.Medication>("/medications", json("POST", m)),
+  /** As-needed medicines: record a dose at the moment it was taken. */
+  logDose: (id: string) => req<T.Dose>(`/medications/${id}/doses`, { method: "POST" }),
 };
 export const schedule = {
   today: () => req<T.Dose[]>("/schedule/today"),
