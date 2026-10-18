@@ -1,14 +1,14 @@
 // OWNER: Member 2 - trial overview, location, criteria, known mismatches, open questions and the official link.
 "use client";
 import { useEffect, useState } from "react";
-import { Activity, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
+import { Activity, PoundSterling, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
 import { trials } from "@/lib/api";
 import type { Trial, TrialExplanation, TrialMatch } from "@/types";
 import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
-import { ReadAloud } from "@/components/ui/ReadAloud";
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
 import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
+import { paymentNote } from "@/lib/payment";
 
 function List({ items, icon: I, tone }: { items: string[]; icon: typeof Check; tone: string }) {
   return <ul className="flex flex-col gap-2">{items.map((x) => <li key={x} className="flex gap-2"><I aria-hidden="true" size={20} className={`mt-0.5 shrink-0 ${tone}`} />{x}</li>)}</ul>;
@@ -54,19 +54,21 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
   return (
     <article className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <div className="pz-card__row">
+        {/* One compact row of badges; scrolls sideways rather than wrapping on very narrow phones. */}
+        <div className="pz-badge-row flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {status && <MatchBadge status={status} />}
           {t.phases.map((p) => <span key={p} className="pz-badge pz-badge--neutral">{phaseLabel(p)}</span>)}
-          {t.phases.length > 0 && <PhaseInfo />}
           <TrialStatusBadge status={t.status} />
+          {t.phases.length > 0 && <PhaseInfo />}
+        </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] md:text-h1">{t.title}</h1>
           <span className="text-caption text-ink-muted">{t.nct_id}</span>
         </div>
-        <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] md:text-h1">{t.title}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="pz-btn pz-btn--secondary pz-btn--sm" onClick={bookmark} disabled={busy || saved} aria-busy={busy}>
             {busy ? <Spinner /> : saved ? <BookmarkCheck aria-hidden="true" size={16} /> : <Bookmark aria-hidden="true" size={16} />}{saved ? "Saved" : "Save trial"}
           </button>
-          <ReadAloud request={{ kind: "trial", nct_id: t.nct_id }} label="Read this trial aloud" />
           <a href={t.url} target="_blank" rel="noreferrer" className="pz-btn pz-btn--ghost pz-btn--sm">Official trial page <ExternalLink aria-hidden="true" size={16} /></a>
         </div>
         {err && <Notice tone="danger">{err}</Notice>}
@@ -107,6 +109,11 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
           <Fact icon={Activity} label="Recruitment">{t.status ? <TrialStatusBadge status={t.status} /> : "Not listed"}</Fact>
           <Fact icon={Stethoscope} label="Conditions">{t.conditions.join(", ") || "Not listed"}</Fact>
           <Fact icon={Pill} label="Treatments tested">{t.interventions.join(", ") || "Not listed"}</Fact>
+          <Fact icon={PoundSterling} label="Payment for taking part">
+            <span className="block text-body">
+            {paymentNote(t) ?? "Not mentioned"}</span>
+            <span className="mt-1 block text-label font-normal text-ink-muted">{paymentNote(t) ? "In the trial's own words. Check the details with the trial team." : "Ask the trial team whether they pay or cover travel."}</span>
+          </Fact>
         </dl>
       </section>
 

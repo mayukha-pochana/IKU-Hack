@@ -2,16 +2,12 @@
 import type { Profile, SexAtBirth, Smoking, YesNoUnsure } from "@/types";
 
 export type Draft = {
-  display_name: string; dob: string; age: number | null; conditions: string[]; location: string; preferred_language: string;
+  display_name: string; last_name: string; phone: string; dob: string; age: number | null; conditions: string[]; location: string; preferred_language: string;
   sex: SexAtBirth | ""; smoking: Smoking | ""; pregnant: YesNoUnsure | ""; travel: string;
 };
-export const EMPTY: Draft = { display_name: "", dob: "", age: null, conditions: [], location: "", preferred_language: "en", sex: "", smoking: "", pregnant: "", travel: "" };
+export const EMPTY: Draft = { display_name: "", last_name: "", phone: "", dob: "", age: null, conditions: [], location: "", preferred_language: "en", sex: "", smoking: "", pregnant: "", travel: "" };
 
 export const COMMON_CONDITIONS = ["Asthma", "Type 2 diabetes", "High blood pressure", "COPD", "Eczema", "Migraine"];
-export const LANGUAGES = [
-  { value: "en", label: "English" }, { value: "cy", label: "Cymraeg (Welsh)" }, { value: "es", label: "Español" },
-  { value: "fr", label: "Français" }, { value: "pl", label: "Polski" }, { value: "ur", label: "اردو (Urdu)" },
-];
 export const SEX_OPTIONS: { value: SexAtBirth; label: string }[] = [
   { value: "female", label: "Female" }, { value: "male", label: "Male" }, { value: "intersex", label: "Intersex" }, { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
@@ -37,14 +33,14 @@ export function ageFromDob(dob: string, today = new Date()): number | null {
 }
 
 export const fromProfile = (p: Profile): Draft => ({
-  display_name: p.display_name, dob: p.date_of_birth ?? "", age: p.age, conditions: p.conditions,
+  display_name: p.display_name, last_name: p.last_name ?? "", phone: p.phone ?? "", dob: p.date_of_birth ?? "", age: p.age, conditions: p.conditions,
   location: p.location ?? "", preferred_language: p.preferred_language || "en",
   sex: p.sex_at_birth ?? "", smoking: p.smoking_status ?? "", pregnant: p.pregnant_or_breastfeeding ?? "",
   travel: p.max_travel_miles == null ? "" : String(p.max_travel_miles),
 });
 
 export const toPayload = (d: Draft) => ({
-  display_name: d.display_name.trim(),
+  display_name: d.display_name.trim(), last_name: d.last_name.trim() || null, phone: d.phone.trim() || null,
   age: d.dob ? ageFromDob(d.dob) : d.age, // the API stores age; date of birth is sent too for when it can store it
   conditions: d.conditions, location: d.location.trim() || null, preferred_language: d.preferred_language,
   date_of_birth: d.dob || null, sex_at_birth: d.sex || null, smoking_status: d.smoking || null,
@@ -52,7 +48,13 @@ export const toPayload = (d: Draft) => ({
   max_travel_miles: d.travel === "" ? null : Number(d.travel),
 });
 
-export function validateName(d: Draft) { return d.display_name.trim() ? null : "Enter the name you'd like us to use."; }
+export function validateName(d: Draft) { return d.display_name.trim() ? null : "Enter your first name."; }
+/** UK or international numbers: digits with optional +, spaces, brackets and dashes, 10 to 15 digits. */
+export function validatePhone(d: Draft) {
+  if (!d.phone.trim()) return null;
+  const digits = d.phone.replace(/\D/g, "");
+  return /^\+?[\d\s()-]+$/.test(d.phone.trim()) && digits.length >= 10 && digits.length <= 15 ? null : "Enter a phone number, like 07700 900123.";
+}
 export function validateDob(d: Draft) {
   if (!d.dob) return null;
   const age = ageFromDob(d.dob);

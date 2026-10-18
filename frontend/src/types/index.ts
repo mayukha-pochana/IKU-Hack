@@ -11,6 +11,8 @@ export interface Profile {
   // Screening fields requested from Member 3 (docs/requests/profile-screening-fields.md). Optional until the API stores them.
   date_of_birth?: string | null; sex_at_birth?: SexAtBirth | null; smoking_status?: Smoking | null;
   pregnant_or_breastfeeding?: YesNoUnsure | null; max_travel_miles?: number | null;
+  // Name and contact, also requested from Member 3.
+  last_name?: string | null; phone?: string | null;
 }
 export interface Medication {
   id: string; name: string; strength: string | null; instructions: string | null;
@@ -31,6 +33,8 @@ export interface Trial {
   inclusion_criteria: string | null; exclusion_criteria: string | null;
   min_age: string | null; max_age: string | null;
   locations: { facility: string | null; city: string | null; country: string | null }[]; url: string;
+  // Payment for taking part, in the trial's own words (requested in docs/requests/trial-compensation.md).
+  compensation?: string | null;
 }
 export interface TrialMatch {
   trial: Trial; status: MatchStatus; why_surfaced: string[]; relevant_criteria: string[];

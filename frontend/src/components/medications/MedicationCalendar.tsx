@@ -64,7 +64,7 @@ const colourVars = (c: Colour) => ({ "--mint": c.body, "--mint-deep": c.deep, "-
 const ANIM_MS = 750;
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-function Pack({ name, doses, colour, amount, route, saving, onToggle }: { name: string; doses: Dose[]; colour: Colour; amount: DoseAmount | null; route: Route; saving: string | null; onToggle: (d: Dose) => void }) {
+function Pack({ name, doses, colour, amount, often, route, saving, onToggle }: { name: string; doses: Dose[]; colour: Colour; amount: DoseAmount | null; often?: string | null; route: Route; saving: string | null; onToggle: (d: Dose) => void }) {
   const [taking, setTaking] = useState<string | null>(null);
   function tap(d: Dose) {
     if (d.status === "TAKEN") { onToggle(d); return; }
@@ -81,6 +81,7 @@ function Pack({ name, doses, colour, amount, route, saving, onToggle }: { name: 
         <p className="text-h3">{name}</p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="pz-badge pz-badge--neutral">{ROUTE_LABEL[route]}</span>
+          {often && <span className="text-label font-normal text-ink-muted">{often.charAt(0).toUpperCase() + often.slice(1)}</span>}
           {amount && <span className="text-label font-normal text-ink-muted">{amount.text} each time</span>}
         </div>
       </div>
@@ -111,7 +112,7 @@ function Pack({ name, doses, colour, amount, route, saving, onToggle }: { name: 
           }))}
         </div>
       </div>
-      <p className="pz-blister__count !mt-0" role="status">{taken} of {doses.length} doses taken this week</p>
+      <p className="pz-blister__count !mt-0" role="status">{taken} of {doses.length} {doses.length === 1 ? "dose" : "doses"} taken this week</p>
     </div>
   );
 }
@@ -124,13 +125,15 @@ export function MedicationCalendar({ onDoseChange, refreshKey = 0, showScanLink 
   const [active, setActive] = useState(0);
   const [amounts, setAmounts] = useState<Record<string, DoseAmount | null>>({});
   const [routes, setRoutes] = useState<Record<string, Route>>({});
+  const [often, setOften] = useState<Record<string, string | null>>({});
   const track = useRef<HTMLDivElement>(null);
   useEffect(() => { setErr(null); schedule.week().then(setDoses).catch((e) => setErr(errorMessage(e))); }, [refreshKey, retry]);
   useEffect(() => {
     medications.list().then((ms) => {
       setAmounts(Object.fromEntries(ms.map((m) => [m.id, doseAmount(m.instructions)])));
       setRoutes(Object.fromEntries(ms.map((m) => [m.id, routeOf(m.name, m.instructions)])));
-    }).catch(() => { setAmounts({}); setRoutes({}); });
+      setOften(Object.fromEntries(ms.map((m) => [m.id, m.frequency])));
+    }).catch(() => { setAmounts({}); setRoutes({}); setOften({}); });
   }, [refreshKey]);
 
   if (err) return <ErrorState message={err} onRetry={() => setRetry(retry + 1)} />;
@@ -172,7 +175,7 @@ export function MedicationCalendar({ onDoseChange, refreshKey = 0, showScanLink 
       <div ref={track} onScroll={onScroll} className="flex items-center snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {meds.map((m, i) => (
           <div key={m.id} className="w-full shrink-0 snap-center" aria-roledescription={multi ? "slide" : undefined} aria-label={multi ? `${i + 1} of ${meds.length}: ${m.name}` : undefined}>
-            <Pack name={m.name} doses={m.doses} colour={m.colour} amount={amounts[m.id] ?? null} route={m.route} saving={saving} onToggle={toggle} />
+            <Pack name={m.name} doses={m.doses} colour={m.colour} amount={amounts[m.id] ?? null} often={often[m.id]} route={m.route} saving={saving} onToggle={toggle} />
           </div>
         ))}
       </div>
@@ -189,7 +192,7 @@ export function MedicationCalendar({ onDoseChange, refreshKey = 0, showScanLink 
           <button type="button" className="pz-btn pz-btn--icon" style={{ width: 36, minHeight: 36 }} onClick={() => go(active + 1)} disabled={active === meds.length - 1} aria-label="Next medicine"><ChevronRight aria-hidden="true" size={18} /></button>
         </div>
       )}
-      <p className="text-center text-caption text-ink-muted">Tap a dose when you&apos;ve taken it. Tap again to undo. You can log any of today&apos;s doses; later days unlock on the day. The week runs Monday to Sunday.{multi && " Swipe to see your other medicines."}</p>
+      <p className="text-center text-caption text-ink-muted">Tap a dose when you&apos;ve taken it. Tap again to undo. You can log any of today&apos;s doses; later days unlock on the day.</p>
     </div>
   );
 }

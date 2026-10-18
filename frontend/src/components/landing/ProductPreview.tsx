@@ -1,5 +1,5 @@
 // OWNER: Member 1 - product demonstration preview, built from the real design-system components.
-import { MapPin, Volume2 } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Badge, MatchBadge } from "@/components/ui/pz";
 import { TrialStatusBadge } from "@/components/trials/TrialMatchCard";
 
@@ -23,7 +23,6 @@ export function ProductPreview() {
           <p className="pz-card__body">Shown because you have asthma and are aged 18 to 65.</p>
           <div className="pz-card__actions">
             <span className="pz-btn pz-btn--secondary pz-btn--sm">Explain this trial</span>
-            <span className="pz-btn pz-btn--icon" style={{ width: 36, minHeight: 36 }}><Volume2 aria-hidden="true" size={18} /></span>
           </div>
         </article>
         <figcaption className="text-caption text-violet-on opacity-90">Example screens with sample data.</figcaption>

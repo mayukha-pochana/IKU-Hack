@@ -14,10 +14,7 @@ export default function CheckInPage() {
         <p className="text-ink-muted">A quick note on how you feel each day. Add heart rate and breathing from Presage if you like. For your records only.</p>
       </header>
       <PresageCameraCheckIn onSaved={() => setTick((t) => t + 1)} />
-      <section aria-labelledby="hist-h" className="flex flex-col gap-3">
-        <h2 id="hist-h" className="text-h2">Past entries</h2>
-        <HealthHistory refreshKey={tick} />
-      </section>
+      <HealthHistory refreshKey={tick} />
     </DashboardLayout>
   );
 }
