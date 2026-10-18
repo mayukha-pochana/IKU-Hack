@@ -11,3 +11,6 @@
 - `frontend/src/components/ui/` (shadcn) -> Member 2
 - `backend/app/main.py` router mounting, `models/__init__.py` -> Member 3
 - Never commit directly to `main`; use PRs.
+
+## Brand kit (shared)
+- PhaseZero design system (https://claude.ai/artifact/KFUiGpp3rkUzRoYdidtcTT) applied in `docs/brand-kit.md`, `frontend/tailwind.config.ts`, `frontend/src/app/globals.css`, `frontend/src/app/layout.tsx`, `frontend/src/components/brand/`, `frontend/src/components/ui/`, `frontend/src/lib/format.ts`, `frontend/public/brand/` -> shared by Members 1 and 2; change via PR with the other frontend member as reviewer.

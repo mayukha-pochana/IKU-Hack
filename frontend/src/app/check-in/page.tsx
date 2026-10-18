@@ -9,10 +9,15 @@ export default function CheckInPage() {
   const [tick, setTick] = useState(0);
   return (
     <DashboardLayout>
-      <h1 className="mb-4 text-3xl font-bold">Health Check-In</h1>
-      <PresageCameraCheckIn onSaved={() => setTick(tick + 1)} />
-      <h2 className="mb-2 mt-8 text-xl font-semibold">History</h2>
-      <HealthHistory refreshKey={tick} />
+      <header className="flex flex-col gap-1">
+        <h1 className="text-h1">Daily diary</h1>
+        <p className="text-ink-muted">A quick note on how you feel each day. Add heart rate and breathing from Presage if you like. For your records only.</p>
+      </header>
+      <PresageCameraCheckIn onSaved={() => setTick((t) => t + 1)} />
+      <section aria-labelledby="hist-h" className="flex flex-col gap-3">
+        <h2 id="hist-h" className="text-h2">Past entries</h2>
+        <HealthHistory refreshKey={tick} />
+      </section>
     </DashboardLayout>
   );
 }

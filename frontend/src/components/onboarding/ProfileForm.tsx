@@ -1,39 +1,50 @@
-// OWNER: Member 1 - health profile creation. Keep it short (minimal repetitive entry).
+// OWNER: Member 1 - single-page profile editor, reused by Member 2's /profile page.
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { profile } from "@/lib/api";
+import { auth, profile } from "@/lib/api";
+import { Loader, Notice, Spinner, TextField, errorMessage } from "@/components/ui/pz";
+import { AboutFields, ConditionFields, HealthFields, LocationFields } from "./ProfileFields";
+import { EMPTY, fromProfile, toPayload, validateDob, validateName, type Draft } from "./profileDraft";
 
-export function ProfileForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
+export function ProfileForm({ redirectTo }: { redirectTo?: string }) {
   const router = useRouter();
-  const [f, setF] = useState({ display_name: "", age: "", conditions: "", location: "", preferred_language: "en" });
-  const [err, setErr] = useState<string | null>(null);
+  const [d, setD] = useState<Draft | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof Draft, string | null>>>({});
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    profile.get().then((p) => setF({ display_name: p.display_name, age: String(p.age ?? ""), conditions: p.conditions.join(", "), location: p.location ?? "", preferred_language: p.preferred_language })).catch(() => {});
+    profile.get().then((p) => setD(fromProfile(p))).catch(() => setD(EMPTY));
+    auth.session().then((s) => setEmail(s.email)).catch(() => {});
   }, []);
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setErr(null);
+    e.preventDefault(); if (!d) return; setMsg(null);
+    const v = { display_name: validateName(d), dob: validateDob(d) };
+    setErrors(v); if (v.display_name || v.dob) return;
+    setSaving(true);
     try {
-      await profile.put({
-        display_name: f.display_name, age: f.age ? Number(f.age) : null,
-        conditions: f.conditions.split(",").map((s) => s.trim()).filter(Boolean),
-        location: f.location || null, preferred_language: f.preferred_language,
-      });
-      router.push(redirectTo);
-    } catch (e: any) { setErr(e.message); }
+      await profile.put(toPayload(d));
+      if (redirectTo) router.push(redirectTo);
+      setMsg({ tone: "success", text: "Profile saved. Your trial matches will update." });
+    } catch (e) { setMsg({ tone: "danger", text: errorMessage(e, "We couldn't save your profile. Please try again.") }); }
+    finally { setSaving(false); }
   }
-  const input = "mt-1 w-full rounded border p-2";
+
+  if (!d) return <Loader label="Loading your profile…" />;
   return (
-    <form onSubmit={submit} className="mx-auto max-w-md space-y-3 p-6">
-      <h1 className="text-2xl font-bold">Your health profile</h1>
-      <label className="block">Name<input required className={input} value={f.display_name} onChange={(e) => setF({ ...f, display_name: e.target.value })} /></label>
-      <label className="block">Age<input type="number" className={input} value={f.age} onChange={(e) => setF({ ...f, age: e.target.value })} /></label>
-      <label className="block">Conditions (comma separated)<input className={input} value={f.conditions} onChange={(e) => setF({ ...f, conditions: e.target.value })} /></label>
-      <label className="block">Location<input className={input} value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} /></label>
-      {err && <p role="alert" className="text-red-700">{err}</p>}
-      <button className="rounded bg-brand-600 px-4 py-2 text-white">Save and continue</button>
+    <form onSubmit={submit} className="flex max-w-2xl flex-col gap-6">
+      <section className="pz-card"><h2 className="pz-card__title">About you</h2>
+        {email && <TextField id="account_email" label="Email" wide readOnly value={email} help="You sign in with this. To use a different email, sign out and sign in with it." />}
+        <AboutFields d={d} set={setD} errors={errors} />
+      </section>
+      <section className="pz-card"><h2 className="pz-card__title">Your conditions</h2><ConditionFields d={d} set={setD} /></section>
+      <section className="pz-card"><h2 className="pz-card__title">More about your health</h2><HealthFields d={d} set={setD} /></section>
+      <section className="pz-card"><h2 className="pz-card__title">Location and travel</h2><LocationFields d={d} set={setD} /></section>
+      {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
+      <button className="pz-btn pz-btn--primary w-full sm:w-auto sm:self-start" disabled={saving} aria-busy={saving}>{saving ? <><Spinner /> Saving…</> : "Save changes"}</button>
     </form>
   );
 }
