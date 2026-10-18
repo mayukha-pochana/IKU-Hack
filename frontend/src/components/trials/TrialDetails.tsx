@@ -8,7 +8,8 @@ import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
 import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
-import { FixIt, UpdateDetails } from "./TrialUpdate";
+import { FixIt, TrialHistory, UpdateDetails } from "./TrialUpdate";
+import { GeminiCredit } from "@/components/ui/GeminiCredit";
 import { paymentNote } from "@/lib/payment";
 
 function List({ items, icon: I, tone }: { items: string[]; icon: typeof Check; tone: string }) {
@@ -100,6 +101,7 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
           <h2 id="update-h" className="pz-card__title">Latest update</h2>
           <UpdateDetails update={update} />
           <FixIt nctId={t.nct_id} update={update} onUpdated={(next) => { if (next) setUpdate({ ...next, is_new: false }); setAttempt((n) => n + 1); }} />
+          <TrialHistory nctId={t.nct_id} refreshKey={attempt + (update.changed_at ? Date.parse(update.changed_at) : 0)} />
         </section>
       )}
 
@@ -116,6 +118,7 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
         <section className="pz-card"><h2 className="pz-card__title">What this trial is about</h2>
           <p className="text-body-lg">{summary ?? t.brief_summary}</p>
           {summary && t.brief_summary && <details><summary className="pz-link cursor-pointer">Official summary</summary><p className="mt-2 text-ink-muted">{t.brief_summary}</p></details>}
+          {x?.plain_summary && <GeminiCredit />}
         </section>
       )}
 

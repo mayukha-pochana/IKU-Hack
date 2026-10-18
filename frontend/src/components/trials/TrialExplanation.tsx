@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CircleHelp, UserRound } from "lucide-react";
 import type { CriterionAssessment, CriterionEffect, EvidenceSource, TrialExplanation as Explanation } from "@/types";
 import { Badge, Notice } from "@/components/ui/pz";
+import { GeminiCredit } from "@/components/ui/GeminiCredit";
 
 /** supports = success, conflicts = danger, unknown = warning. Badge always pairs an icon with the word. */
 export const EFFECT_LABEL: Record<CriterionEffect, { tone: "success" | "danger" | "warning"; label: string }> = {
@@ -67,6 +68,7 @@ export function ExplanationCriteria({ criteria }: { criteria: CriterionAssessmen
           <ul>{g.items.map((c, i) => <Criterion key={`${g.kind}-${i}`} c={c} />)}</ul>
         </div>
       ))}
+      <GeminiCredit what="Requirements explained by Gemini" />
     </section>
   );
 }
@@ -84,6 +86,7 @@ export function ExplanationExtras({ explanation: x }: { explanation: Explanation
       {x.questions_to_ask.length > 0 && (
         <section className="pz-card bg-violet-soft"><h2 className="pz-card__title">Questions to ask the trial team</h2>
           <ul className="flex flex-col gap-2">{x.questions_to_ask.map((q) => <li key={q} className="flex gap-2"><CircleHelp aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-violet-text" />{q}</li>)}</ul>
+          <GeminiCredit what="Suggested by Gemini" />
         </section>
       )}
     </>

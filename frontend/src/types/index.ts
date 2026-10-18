@@ -62,6 +62,8 @@ export interface UpdatesResponse {
   handled_events?: { kind: string; summary: string; changes: { nct_id: string; title: string }[] }[];
 }
 export type Correction = FixOption | { text: string };
+export interface TrialChange { nct_id: string; title: string; from: MatchStatus | null; to: MatchStatus; reason: string }
+export interface AgentEvent { id: string; kind: string; summary: string; created_at: string; processed_at: string | null; changes: TrialChange[] }
 // POST /trials/{nct_id}/explain (Gemini). `effect` is derived by the backend, never an eligibility decision.
 export type CriterionEffect = "supports" | "conflicts" | "unknown";
 export interface CriterionAssessment {

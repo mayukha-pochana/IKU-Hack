@@ -91,4 +91,6 @@ export const updates = {
   list: () => req<T.UpdatesResponse>("/agent/updates"),
   markSeen: (nctIds?: string[]) => req<void>("/agent/updates/seen", json("POST", { nct_ids: nctIds ?? null })),
   correct: (c: T.Correction) => req<unknown>("/agent/corrections", json("POST", c)),
+  /** Everything that happened and which trials it changed, newest first. */
+  timeline: () => req<T.AgentEvent[]>("/agent/timeline"),
 };

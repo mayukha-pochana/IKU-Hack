@@ -48,13 +48,24 @@ cd frontend && npx cap sync ios && npx cap open ios     # Xcode: pick an iPhone 
 - Real phone on the same Wi-Fi: `CAP_SERVER_URL=http://<your Mac's IP>:3000 npx cap sync ios`, set `FRONTEND_ORIGIN=http://<IP>:3000` in `backend/.env`, start the backend with `--host 0.0.0.0` and the frontend with `NEXT_PUBLIC_API_URL=http://<IP>:8000`.
 - A fully bundled build (no server) is opt-in with `npm run build:static`; dynamic trial pages need more work before that's usable.
 
+## Presage check-in (real measurement)
+The phone app and simulator can't run Presage, so measurements come from a small desktop app that uses Presage's official SDK on your Mac's webcam and saves the result to Maya's account.
+```bash
+cd integrations/presage-desktop
+npm install                       # first time only
+# .env needs PRESAGE_API_KEY, PRESAGE_RESULT_SECRET (32+ random characters) and
+# CAREFLOW_BACKEND_URL=http://127.0.0.1:8000 (or 8010 if that's where the backend runs)
+npm start
+```
+Click **Connect**, tick camera consent, **Start camera measurement**, sit still for 30–60 s, then tick save consent and **Save**. The reading appears in Maya's diary, and the trial agent receives it as a low-trust check-in.
+
 ## Integration status (keep honest!)
 | Integration | Status | Notes |
 |---|---|---|
 | Gemini (prescription + trial explanation) | Live, verified end to end | label reading (1-3 photos), trial explanation and pre-screen; `GEMINI_MODEL=gemini-3.5-flash-lite` |
 | Adaptive agent (incident.io track) | Live, verified end to end | re-checks opened trials when medications, profile, corrections or check-ins change; `/api/agent/*` |
 | ClinicalTrials.gov v2 | Live, verified end to end | search, matches and trial details; optional cache: `python -m scripts.sync_trials asthma` |
-| Presage SmartSpectra | Partial | check-ins with heart and breathing rate are saved and used by the agent as low-trust evidence; see `backend/app/services/presage/README.md` |
+| Presage SmartSpectra | Desktop companion (real SDK) | Mac webcam measurement via `integrations/presage-desktop` (Presage Node SDK 3.4.0) saves to the demo account; not inside the phone app yet |
 | PostgreSQL / TimescaleDB | Live, verified end to end | local `docker compose up -d db`; Tiger Data cloud works by setting `DATABASE_URL` (not used in testing) |
 | ElevenLabs | Not used | backend code remains; Read aloud removed from the UI |
 | Snowflake Cortex Search | Not used | trial accounts can't use Cortex; code switches on only if `SNOWFLAKE_*` is set |

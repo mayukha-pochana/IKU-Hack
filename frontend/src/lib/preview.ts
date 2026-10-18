@@ -224,6 +224,16 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
     const u = demoUpdate(s.demo);
     return { new_count: u.is_new ? 1 : 0, updates: [{ ...u, nct_id: DEMO_NCT, title: DEMO_MATCH.trial.title }], handled_events: [] };
   }
+  if (route === "/agent/timeline") {
+    const at = (minsAgo: number) => new Date(Date.now() - minsAgo * 60000).toISOString();
+    const ch = (from: T.MatchStatus | null, to: T.MatchStatus, reason: string) => [{ nct_id: DEMO_NCT, title: DEMO_MATCH.trial.title, from, to, reason }];
+    const events: T.AgentEvent[] = [
+      { id: "e1", kind: "trial_watched", summary: "You opened this trial", created_at: at(30), processed_at: at(30), changes: ch(null, "MORE_INFORMATION_NEEDED", "First check.") },
+      { id: "e2", kind: "medication_confirmed", summary: "You confirmed Insulin glargine 10 units.", created_at: at(20), processed_at: at(20), changes: ch("MORE_INFORMATION_NEEDED", "KNOWN_CRITERIA_MISMATCH", "Insulin rules you out.") },
+    ];
+    if (s.demo.stoppedInsulin) events.push({ id: "e3", kind: "correction", summary: "You told us: I'm not taking Insulin glargine", created_at: s.demo.changedAt, processed_at: s.demo.changedAt, changes: ch("KNOWN_CRITERIA_MISMATCH", "MORE_INFORMATION_NEEDED", "Insulin now counts in your favour.") });
+    return events.reverse();
+  }
   if (route === "/agent/updates/seen") { s.demo.seen = true; return undefined; }
   if (route === "/agent/corrections") {
     const facts: { type: string }[] = body?.facts ?? [];
