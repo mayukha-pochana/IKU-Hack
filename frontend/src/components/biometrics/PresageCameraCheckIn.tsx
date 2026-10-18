@@ -196,7 +196,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
                     <p className="text-ink-muted">So far: {live.heart_rate != null ? `${Math.round(live.heart_rate)} bpm` : "heart rate…"} · {live.breathing_rate != null ? `${Math.round(live.breathing_rate)} breaths/min` : "breathing…"}</p>
                   )}
                   {live?.hint && <p className="text-caption text-ink-muted">{live.hint}</p>}
-                  <p className="text-caption text-ink-muted">Takes 30 to 60 seconds.</p>
+                  <p className="text-caption text-ink-muted">Takes 15 to 60 seconds.</p>
                   <button type="button" className="pz-btn pz-btn--ghost pz-btn--sm self-start" onClick={() => stopMeasuring.current?.()}>Stop</button>
                 </>
               )}

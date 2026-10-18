@@ -23,7 +23,8 @@ if (existsSync(envPath)) process.loadEnvFile(envPath);
 const PORT = Number(process.env.GATEWAY_PORT || 8030);
 const BACKEND = new URL(process.env.CAREFLOW_BACKEND_URL || 'http://127.0.0.1:8010');
 const FRONTEND = new URL(process.env.CAREFLOW_FRONTEND_URL || 'http://127.0.0.1:3000');
-const IDLE_MS = 10_000;          // no frames for this long ends the measurement
+const IDLE_MS = 10_000;
+const MIN_WEB_MS = 15_000;       // the SDK can report stable values well before the desktop app's 30 s minimum          // no frames for this long ends the measurement
 const MAX_FRAME_BYTES = 1_500_000;
 if (!process.env.PRESAGE_API_KEY) throw new Error('Configure PRESAGE_API_KEY in integrations/presage-desktop/.env');
 
@@ -74,7 +75,11 @@ async function measure(ws, req) {
     done = true;
     clearInterval(tick);
     console.log(`[presage] session ended after ${Math.round((Date.now() - startedAt) / 1000)}s, ${frames} frames`);
-    const result = tracker.result(startedAt, Date.now());
+    // Keep real stable SDK readings that arrived before a late processing error or an early stop.
+    const now = Date.now();
+    const values = tracker.values(now);
+    const result = now - startedAt >= MIN_WEB_MS && (values.heart_rate !== null || values.breathing_rate !== null) ? values : null;
+    console.log(`[presage] result ${JSON.stringify(result)}`);
     send(result ? { type: 'result', result } : { type: 'error', code: 'no_reading',
       message: message || 'No stable reading. Try brighter, even light and keep your face still.' });
     ws.close();
@@ -93,6 +98,10 @@ async function measure(ws, req) {
     if (hint && hint !== lastHint) { lastHint = hint; send({ type: 'hint', hint }); }
   });
   sdk.on('error', (code, message, retryable) => {
+    if (code === 8 && metricCount > 0) { // processing hiccup after real readings: keep what we have
+      console.error(`[presage] processing error after ${metricCount} metrics; finishing with stable values`);
+      return finish('Presage stopped early. Try again and keep your face still and well lit.');
+    }
     console.error(`[presage] error code=${code} retryable=${retryable} frames=${frames} metrics=${metricCount}: ${message}`);
     finish(`Measurement failed: ${message}`);
   });
@@ -101,12 +110,16 @@ async function measure(ws, req) {
     send({ type: 'progress', seconds: Math.floor((now - startedAt) / 1000), ...tracker.values(now) });
     if (now - lastFrameAt > IDLE_MS) finish('The camera stopped sending video.');
     else if (tracker.shouldStop(startedAt, now)) finish();
+    else if (now - startedAt >= MIN_WEB_MS) {
+      const v = tracker.values(now);
+      if (v.heart_rate !== null && v.breathing_rate !== null) finish();
+    }
   }, 500);
 
   ws.on('close', () => finish());
   ws.on('message', (data, isBinary) => {
     if (done) return;
-    if (!isBinary) { if (String(data) === 'stop') finish('Stopped. A reading needs at least 30 seconds.'); return; }
+    if (!isBinary) { if (String(data) === 'stop') finish('Stopped. A reading needs at least 15 seconds.'); return; }
     if (data.length < 9 || data.length > MAX_FRAME_BYTES) return;
     const clientTs = Number(data.readBigUInt64LE(0)); // capture time in µs (monotonic browser clock)
     epochOffsetUs ??= Date.now() * 1000 - clientTs;
