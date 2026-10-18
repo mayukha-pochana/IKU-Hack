@@ -16,3 +16,19 @@ def test_never_definitive_without_review(sample_study):
     m = match_trial(_profile(28), parse_study(sample_study))
     assert m.status == MatchStatus.MORE_INFORMATION_NEEDED  # exclusion criteria need coordinator
     assert "Preliminary" in m.disclaimer
+
+
+def test_exclusion_items_listed_individually(sample_study):
+    sample_study["protocolSection"]["eligibilityModule"]["eligibilityCriteria"] = (
+        "Inclusion Criteria:\n- Adults\n\nExclusion Criteria:\n- Pregnancy\n- Recent surgery within\n  30 days\n* Current smoker"
+    )
+    m = match_trial(_profile(28), parse_study(sample_study))
+    assert "Study team will check: Pregnancy" in m.needs_coordinator_confirmation
+    assert any("Recent surgery within 30 days" in c for c in m.needs_coordinator_confirmation)
+    assert any("Current smoker" in c for c in m.needs_coordinator_confirmation)
+
+
+def test_extract_handles_empty_and_numbered():
+    from app.services.trials.matching import extract_criteria_items
+    assert extract_criteria_items(None) == []
+    assert extract_criteria_items("Exclusion Criteria:\n1. A\n2) B") == ["A", "B"]
