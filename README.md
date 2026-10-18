@@ -37,6 +37,17 @@ cd ../frontend && npm run dev                 # http://localhost:3000 -> "Try th
 - Demo story and narration: [`docs/demo-script.md`](docs/demo-script.md). Scan `demo-assets/insulin-box-with-pharmacy-label.jpg` (synthetic pharmacy label) when Maya's GP prescribes insulin.
 - If port 8000 is taken, run the backend on another port and start the frontend with `NEXT_PUBLIC_API_URL=http://localhost:<port>`.
 
+## The phone app (iOS / Android)
+PhaseZero ships as a Capacitor app (`frontend/ios`, `frontend/android`) that opens the running PhaseZero frontend, so every screen and sign-in work exactly as on the web.
+```bash
+# with the backend and frontend running (see above)
+cd frontend && npx cap sync ios && npx cap open ios     # Xcode: pick an iPhone simulator, press Run
+```
+- In the app, the landing page forwards to sign-in; use **Try the demo account**.
+- Simulator: `localhost` is your Mac, nothing else to set. Add the demo label photo to the simulator with `xcrun simctl addmedia booted demo-assets/insulin-box-with-pharmacy-label.jpg`, then use **Upload from gallery**.
+- Real phone on the same Wi-Fi: `CAP_SERVER_URL=http://<your Mac's IP>:3000 npx cap sync ios`, set `FRONTEND_ORIGIN=http://<IP>:3000` in `backend/.env`, start the backend with `--host 0.0.0.0` and the frontend with `NEXT_PUBLIC_API_URL=http://<IP>:8000`.
+- A fully bundled build (no server) is opt-in with `npm run build:static`; dynamic trial pages need more work before that's usable.
+
 ## Integration status (keep honest!)
 | Integration | Status | Notes |
 |---|---|---|

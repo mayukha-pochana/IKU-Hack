@@ -7,10 +7,12 @@ import { Monitoring } from "@/components/landing/Monitoring";
 import { Accessibility } from "@/components/landing/Accessibility";
 import { CallToAction } from "@/components/landing/CallToAction";
 import { Footer } from "@/components/landing/Footer";
+import { AppRedirect } from "@/components/landing/AppRedirect";
 
 export default function Home() {
   return (
     <>
+      <AppRedirect />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:inset-x-0 focus:top-0 focus:z-50 focus:block focus:bg-violet focus:px-4 focus:py-3 focus:text-violet-on focus:font-semibold">Skip to content</a>
       <Navbar />
       <main id="main">

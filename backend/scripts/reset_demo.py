@@ -49,7 +49,7 @@ def main():
         db.add(user)
         db.flush()
         db.add(PatientProfile(user_id=user.id, display_name="Maya", age=52, conditions=["Type 2 diabetes"],
-                              location="Birmingham", preferred_language="en"))
+                              location="Birmingham, UK", preferred_language="en"))
 
         now = datetime.now(timezone.utc)
         week_ago = now.astimezone(ZoneInfo(TZ)).date() - timedelta(days=7)

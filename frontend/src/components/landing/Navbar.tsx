@@ -14,7 +14,7 @@ const LINKS = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-surface">
+    <header className="sticky top-0 z-20 border-b border-line bg-surface pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Logo />
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">

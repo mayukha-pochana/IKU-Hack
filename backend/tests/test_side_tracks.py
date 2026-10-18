@@ -252,3 +252,17 @@ async def test_gemini_retries_once_on_transient_errors(mock_http, monkeypatch):
     mock_http(handler)
     assert (await parse_prescription_image(b"x", "image/png")).medication_name == "ExampleMed"
     assert len(calls) == 2
+
+
+async def test_patient_search_uses_condition_and_location_then_falls_back(mock_http):
+    from app.services.trials.clinicaltrials_client import search_for_patient
+    calls = []
+    def handler(request):
+        calls.append(dict(request.url.params))
+        near = "query.locn" in request.url.params
+        return httpx.Response(200, json={"studies": [] if near else [study("NCT00000123")]})
+    mock_http(handler)
+    found = await search_for_patient("Type 2 diabetes", "Birmingham", 15)
+    assert [t.nct_id for t in found] == ["NCT00000123"]
+    assert calls[0]["query.cond"] == "Type 2 diabetes" and calls[0]["query.locn"] == "Birmingham"
+    assert "query.locn" not in calls[1]                     # nothing nearby: search anywhere instead

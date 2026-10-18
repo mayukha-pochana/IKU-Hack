@@ -11,3 +11,7 @@ venv/
 .DS_Store
 uploads/
 *.tsbuildinfo
+
+# Build output (mobile static export, TypeScript)
+out/
+tsconfig.tsbuildinfo

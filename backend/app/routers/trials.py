@@ -82,7 +82,7 @@ async def matches(response: Response, user: User = Depends(get_current_user), db
     for cond in profile.conditions:
         found = cache.search_cached(db, cond, 25)   # fast: local cache
         if not found:                               # cache empty -> live API
-            found = await ct.search_trials(cond, 10)
+            found = await ct.search_for_patient(cond, profile.location, 15)
         trials += found
     seen, out = set(), []
     for t in trials:
@@ -106,7 +106,13 @@ async def _with_agent(db: Session, user: User, results: list[TrialMatch]) -> lis
             if m.trial.nct_id in rows:
                 m.update = update_for(rows[m.trial.nct_id], record)
                 m.status = m.update.status
-    return sorted(results, key=lambda m: STATUS_ORDER[m.status])   # stable: keeps relevance within a status
+    return sorted(results, key=lambda m: (STATUS_ORDER[m.status], -_relevance(m)))   # stable within ties
+
+
+def _relevance(m: TrialMatch) -> int:
+    """Within a status, trials for the patient's own condition and with a site near them come first."""
+    why = " ".join(m.why_surfaced).lower()
+    return 2 * ("condition matches" in why) + ("site found near" in why)
 
 
 # NOTE: declared before "/{nct_id}" so "bookmarks" isn't captured as an id.
