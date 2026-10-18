@@ -17,7 +17,7 @@ type Phase = "idle" | "measuring" | "done" | "unavailable" | "failed" | "denied"
 type Live = { seconds: number; heart_rate: number | null; breathing_rate: number | null; hint?: string };
 type Reading = { heart_rate: number | null; breathing_rate: number | null };
 
-const FPS = 15;
+const FPS = 30;
 const FRAME_WIDTH = 640;
 
 /** Streams camera frames (JPEG, prefixed with a µs capture time) to the gateway's Presage SDK session and resolves
@@ -29,6 +29,7 @@ function runPresageMeasurement(video: HTMLVideoElement, onLive: (l: Live) => voi
     const canvas = document.createElement("canvas");
     let timer: ReturnType<typeof setInterval> | undefined;
     let pending = false;
+    let sized = false;
     let ready = false;
     let settled = false;
     let hint: string | undefined;
@@ -37,8 +38,10 @@ function runPresageMeasurement(video: HTMLVideoElement, onLive: (l: Live) => voi
 
     function sendFrame() {
       if (pending || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > 512_000 || !video.videoWidth) return;
-      canvas.width = FRAME_WIDTH;
-      canvas.height = Math.round(FRAME_WIDTH * video.videoHeight / video.videoWidth);
+      if (!sized) { sized = true; // lock the frame size: the SDK needs every frame the same shape
+        canvas.width = FRAME_WIDTH;
+        canvas.height = Math.round(FRAME_WIDTH * video.videoHeight / video.videoWidth / 2) * 2;
+      }
       canvas.getContext("2d")!.drawImage(video, 0, 0, canvas.width, canvas.height);
       const ts = BigInt(Math.round(performance.now() * 1000));
       pending = true;
@@ -90,7 +93,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
     setErr(null); setReading(null); setLive(null); setFailMsg(null);
     if (!navigator.mediaDevices?.getUserMedia) { setPhase("unavailable"); return; }
     try {
-      stream.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); // browser asks for permission here
+      stream.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } }); // browser asks for permission here
       if (video.current) video.current.srcObject = stream.current;
       setPhase("measuring");
       setReading(await runPresageMeasurement(video.current!, setLive, stopMeasuring)); setPhase("done"); setKeepReading(true);

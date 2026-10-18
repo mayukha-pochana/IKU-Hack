@@ -64,12 +64,15 @@ async function measure(ws, req) {
   const startedAt = Date.now();
   let lastFrameAt = Date.now();
   let lastTs = -1;
+  let epochOffsetUs = null; // browser clock -> wall-clock epoch µs, as Presage's own frame pump does
+  let frames = 0;
   let done = false;
 
   async function finish(message) {
     if (done) return;
     done = true;
     clearInterval(tick);
+    console.log(`[presage] session ended after ${Math.round((Date.now() - startedAt) / 1000)}s, ${frames} frames`);
     const result = tracker.result(startedAt, Date.now());
     send(result ? { type: 'result', result } : { type: 'error', code: 'no_reading',
       message: message || 'No stable reading. Try brighter, even light and keep your face still.' });
@@ -84,7 +87,10 @@ async function measure(ws, req) {
   sdk.on('validationStatus', (_code, _ts, hint) => {
     if (hint && hint !== lastHint) { lastHint = hint; send({ type: 'hint', hint }); }
   });
-  sdk.on('error', (_code, message) => finish(`Measurement failed: ${message}`));
+  sdk.on('error', (code, message, retryable) => {
+    console.error(`[presage] error code=${code} retryable=${retryable} frames=${frames}: ${message}`);
+    finish(`Measurement failed: ${message}`);
+  });
   const tick = setInterval(() => {
     const now = Date.now();
     send({ type: 'progress', seconds: Math.floor((now - startedAt) / 1000), ...tracker.values(now) });
@@ -97,7 +103,9 @@ async function measure(ws, req) {
     if (done) return;
     if (!isBinary) { if (String(data) === 'stop') finish('Stopped. A reading needs at least 30 seconds.'); return; }
     if (data.length < 9 || data.length > MAX_FRAME_BYTES) return;
-    const ts = Number(data.readBigUInt64LE(0)); // capture time in µs (monotonic, from the browser)
+    const clientTs = Number(data.readBigUInt64LE(0)); // capture time in µs (monotonic browser clock)
+    epochOffsetUs ??= Date.now() * 1000 - clientTs;
+    const ts = clientTs + epochOffsetUs;
     if (ts <= lastTs) return;
     try {
       const img = jpeg.decode(data.subarray(8), { useTArray: true, maxResolutionInMP: 2, formatAsRGBA: true });
@@ -105,6 +113,7 @@ async function measure(ws, req) {
         img.width, img.height, img.width * 4, PixelFormat.kRGBA, ts);
       lastTs = ts;
       lastFrameAt = Date.now();
+      if (++frames === 1) console.log(`[presage] first frame ${img.width}x${img.height}`);
     } catch { /* drop a bad frame */ }
   });
 
