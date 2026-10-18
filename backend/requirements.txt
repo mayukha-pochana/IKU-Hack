@@ -11,3 +11,4 @@ python-multipart>=0.0.9
 google-genai>=0.3        # verify current Gemini SDK package/name
 pytest>=8
 pytest-asyncio>=0.23
+email-validator>=2.1
