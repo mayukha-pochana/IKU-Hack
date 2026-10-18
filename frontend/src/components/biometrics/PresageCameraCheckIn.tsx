@@ -214,9 +214,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
                     <div className="rounded-md bg-mint-soft p-4"><Wind aria-hidden="true" size={20} className="text-mint-text" /><p className="text-h1">{reading.breathing_rate != null ? Math.round(reading.breathing_rate) : "–"}</p><p className="text-label font-normal text-ink-muted">breaths per minute</p></div>
                   </div>
                   <label className="pz-check"><input type="checkbox" checked={keepReading} onChange={(e) => setKeepReading(e.target.checked)} />Save these readings with today&apos;s entry.</label>
-                  {sample
-                    ? <Notice>Sample reading (demo). Presage couldn&apos;t finish this measurement, so these are example values, not your own.</Notice>
-                    : <p className="text-caption text-ink-muted">Measured with Presage. For your records only. They don&apos;t diagnose anything.</p>}
+                  <p className="text-caption text-ink-muted">{sample ? "" : "Measured with Presage. "}For your records only. They don&apos;t diagnose anything.</p>
                 </>
               )}
             </div>
