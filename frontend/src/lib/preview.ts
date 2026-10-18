@@ -90,12 +90,12 @@ const MATCHES: T.TrialMatch[] = [
 ];
 
 // Demo trial for the "trial updates" screens (fixed sample text, not from the backend or Gemini).
-const DEMO_NCT = "NCT07760883";
+const DEMO_NCT = "NCT06897475";
 const DEMO_MATCH: T.TrialMatch = {
-  trial: { nct_id: DEMO_NCT, title: "Sample trial: metformin effects by gene carrier status", brief_summary: "A sample used to preview how PhaseZero tells you when a trial changes.",
+  trial: { nct_id: DEMO_NCT, title: "Sample trial: a new weekly diabetes medicine compared with placebo", brief_summary: "A sample used to preview how PhaseZero tells you when a trial changes.",
     status: "RECRUITING", conditions: ["Type 2 Diabetes"], interventions: ["Metformin"], phases: ["PHASE4"],
     inclusion_criteria: "Adults aged 30 to 70 with type 2 diabetes\nTaking metformin", exclusion_criteria: "Currently taking insulin",
-    min_age: "30 Years", max_age: "70 Years", locations: [{ facility: "Sample Research Unit", city: "London", country: "United Kingdom" }], url: `https://clinicaltrials.gov/study/${DEMO_NCT}` },
+    min_age: "30 Years", max_age: "70 Years", locations: [{ facility: "Sample Research Unit", city: "Birmingham", country: "United Kingdom" }], url: `https://clinicaltrials.gov/study/${DEMO_NCT}` },
   status: "MORE_INFORMATION_NEEDED", why_surfaced: ["You take metformin"], relevant_criteria: [], missing_information: [], needs_coordinator_confirmation: [],
   plain_language_summary: null, disclaimer: "Preview sample. Preliminary match only; the trial team decides who can take part.",
 };
@@ -104,11 +104,11 @@ function demoUpdate(d: DB["demo"]): T.TrialUpdate {
     ? { status: "MORE_INFORMATION_NEEDED", label: "We need to check", previous_status: "KNOWN_CRITERIA_MISMATCH", previous_label: "Not a fit right now",
         reason: "\"You can't be taking insulin\" now counts in your favour (from what you told us). Other requirements still need checking with the study team.",
         changed_at: d.changedAt, is_new: !d.seen, provisional: false,
-        fix_options: [{ label: "I'm taking Insulin glargine again", facts: [{ type: "medication_taking", value: "Insulin glargine" }] }] }
+        fix_options: [{ label: "I am taking Insulin glargine", facts: [{ type: "medication_taking", value: "Insulin glargine" }] }] }
     : { status: "KNOWN_CRITERIA_MISMATCH", label: "Not a fit right now", previous_status: "MORE_INFORMATION_NEEDED", previous_label: "We need to check",
         reason: "\"You can't be taking insulin\" now means this study may not fit you (from Insulin glargine 10 units).",
         changed_at: d.changedAt, is_new: !d.seen, provisional: false,
-        fix_options: [{ label: "I stopped taking Insulin glargine", facts: [{ type: "medication_stopped", value: "Insulin glargine" }] }] };
+        fix_options: [{ label: "I'm not taking Insulin glargine", facts: [{ type: "medication_stopped", value: "Insulin glargine" }] }] };
 }
 const demoMatch = (s: DB): T.TrialMatch => { const u = demoUpdate(s.demo); return { ...DEMO_MATCH, status: u.status, update: u }; };
 
@@ -162,6 +162,16 @@ export async function previewRequest(path: string, init: RequestInit = {}): Prom
       times: [], duration_days: 7, plain_language_summary: "Preview sample: an antibiotic capsule taken three times a day for a week.",
       uncertainties: [`Preview mode: sample text, not read from your ${photos} photo${photos === 1 ? "" : "s"}.`, "No administration times are printed; times were not found."],
     } satisfies T.ParsedPrescription;
+  }
+  const stopMed = route.match(/^\/medications\/(.+)\/stop$/);
+  if (stopMed && method === "POST") {
+    const m = s.meds.find((x) => x.id === stopMed[1]);
+    if (!m) throw new PreviewError("not_found", "Medication not found.", 404);
+    if (!m.confirmed_schedule.stopped_at) {
+      m.confirmed_schedule = { ...m.confirmed_schedule, stopped_at: now.toISOString() };
+      s.doses = s.doses.filter((d) => !(d.medication_id === m.id && d.status === "SCHEDULED" && new Date(d.scheduled_at) > now));
+    }
+    return m;
   }
   const logDose = route.match(/^\/medications\/(.+)\/doses$/);
   if (logDose && method === "POST") {

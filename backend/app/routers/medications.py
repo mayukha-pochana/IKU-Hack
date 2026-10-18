@@ -66,3 +66,23 @@ def log_as_needed_dose(med_id: uuid.UUID, user: User = Depends(get_current_user)
     db.commit()
     return DoseOut(id=dose.id, medication_id=med.id, medication_name=med.name, scheduled_at=now,
                    status=DoseStatus.TAKEN, confirmed_at=now)
+
+
+@router.post("/{med_id}/stop", response_model=MedicationOut)
+def stop(med_id: uuid.UUID, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """The patient stops (or never starts) a medicine: future scheduled doses are removed, past history is kept,
+    and the trial-update agent is told."""
+    med = db.scalar(select(Medication).where(Medication.id == med_id, Medication.user_id == user.id))
+    if not med:
+        raise AppError("not_found", "Medication not found.", 404)
+    if (med.confirmed_schedule or {}).get("stopped_at"):
+        return med
+    now = datetime.now(timezone.utc)
+    for dose in db.scalars(select(DoseEvent).where(DoseEvent.medication_id == med.id, DoseEvent.scheduled_at > now,
+                                                   DoseEvent.status == DoseStatus.SCHEDULED.value)):
+        db.delete(dose)
+    med.confirmed_schedule = {**(med.confirmed_schedule or {}), "stopped_at": now.isoformat()}
+    record_event(db, user.id, "medication_stopped", f"You stopped {med.name}.")
+    db.commit()
+    db.refresh(med)
+    return med
