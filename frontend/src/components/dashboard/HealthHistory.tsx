@@ -90,7 +90,7 @@ function WeekStrip({ byDay, selected, onSelect }: { byDay: Map<string, Checkin[]
 function DayEntries({ day, list }: { day: Date; list: Checkin[] | undefined }) {
   const isToday = ymd(day) === ymd(new Date());
   return (
-    <div key={ymd(day)} className="pz-page-in flex flex-col gap-3" aria-live="polite">
+    <div key={ymd(day)} className="pz-fade flex flex-col gap-3" aria-live="polite">
       <h3 className="text-h3">{isToday ? "Today" : longDate(day)}</h3>
       {!list?.length ? (
         <p className="rounded-[20px] border border-dashed border-line px-4 py-5 text-center text-ink-muted">

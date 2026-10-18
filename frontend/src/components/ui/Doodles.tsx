@@ -41,3 +41,24 @@ export function SunDoodle({ className, size = 20 }: P) {
     </svg>
   );
 }
+
+/** A prescription slip with a capsule and a sparkle, lavender and mint. */
+export function PrescriptionDoodle({ className, size = 96 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 96 96" aria-hidden="true" className={cn("pointer-events-none", className)}>
+      <ellipse cx="48" cy="86" rx="28" ry="4" fill="#e7e2fb" />
+      <rect x="22" y="14" width="44" height="58" rx="9" fill="#ffffff" stroke="#cdbff8" strokeWidth="2.2" transform="rotate(-6 44 43)" />
+      <g transform="rotate(-6 44 43)" stroke="#b9acef" strokeWidth="2.6" strokeLinecap="round">
+        <path d="M31 30h18" /><path d="M31 39h26" /><path d="M31 48h20" />
+      </g>
+      <text x="29" y="26" fontSize="10" fontWeight="700" fill="#8f7bd6" transform="rotate(-6 44 43)">Rx</text>
+      <g transform="rotate(38 66 60)">
+        <rect x="52" y="52" width="30" height="15" rx="7.5" fill="#a8ead1" />
+        <path d="M67 52h7.5a7.5 7.5 0 0 1 0 15H67z" fill="#ab97ef" />
+        <rect x="56" y="55" width="8" height="2.6" rx="1.3" fill="#fff" opacity=".7" />
+      </g>
+      <path d="M76 16l1.8 4.2L82 22l-4.2 1.8L76 28l-1.8-4.2L70 22l4.2-1.8z" fill="#f4cf5d" />
+      <circle cx="16" cy="58" r="2.2" fill="#f7b3c6" />
+    </svg>
+  );
+}

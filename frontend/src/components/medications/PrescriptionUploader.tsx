@@ -2,7 +2,8 @@
 // -> explicit confirm -> save. Nothing about dosing is invented or saved without the patient confirming it.
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImagePlus, Plus, Sparkles, Trash2, Upload, X } from "lucide-react";
+import { Camera, ImagePlus, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { PrescriptionDoodle } from "@/components/ui/Doodles";
 import { medications, prescriptions } from "@/lib/api";
 import type { ParsedPrescription, SchedulePattern } from "@/types";
 import { Chip, Loader, Notice, Segmented, Spinner, TextField, errorMessage } from "@/components/ui/pz";
@@ -108,8 +109,7 @@ export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
   );
 
   return (
-    <section className="pz-card" aria-labelledby="scan-h">
-      <h2 id="scan-h" className="pz-card__title">Scan a prescription</h2>
+    <section className="pz-diary !gap-5" aria-labelledby="scan-h">
       <input ref={camera} type="file" accept={TYPES.join(",")} capture="environment" className="sr-only" tabIndex={-1}
         onChange={(e) => addFiles(e.target.files)} aria-label="Take a photo of the label" />
       <input ref={gallery} type="file" accept={TYPES.join(",")} multiple className="sr-only" tabIndex={-1}
@@ -119,16 +119,30 @@ export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
         <div
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
           onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
-          className={`flex flex-col items-center gap-3 rounded-md border-2 border-dashed p-6 text-center ${drag ? "border-violet bg-violet-soft" : "border-line-strong"}`}>
+          className={`flex flex-col items-center gap-4 rounded-[22px] text-center transition-colors ${drag ? "bg-violet-soft/70 outline-dashed outline-2 outline-violet" : ""}`}>
+          {photos.length === 0 && <PrescriptionDoodle />}
+          <div className="flex flex-col gap-1.5">
+            <h2 id="scan-h" className="text-[24px] font-semibold leading-8 tracking-[-0.01em]">Scan a prescription</h2>
+            {photos.length === 0 && <p className="mx-auto max-w-[32ch] text-ink-muted">Snap your prescription or medicine label. If it wraps round the bottle, add up to {MAX_PHOTOS} sides.</p>}
+          </div>
+          {/* Three tiny steps, so it's clear nothing is saved until you check it. */}
+          <ol className="flex items-center gap-2 text-label font-medium" aria-label="How it works">
+            {[["Snap", "#e6faf3", "#0b7a5c"], ["Check", "#f1edfd", "#5a46b8"], ["Done", "#fff8e1", "#8a6206"]].map(([t, bg, fg], i) => (
+              <li key={t} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden="true" className="h-px w-4 bg-line-strong" />}
+                <span className="inline-flex items-center gap-1.5 rounded-pill py-1 pl-1 pr-3" style={{ background: bg, color: fg }}>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-pill bg-white text-[12px]">{i + 1}</span>{t}
+                </span>
+              </li>
+            ))}
+          </ol>
           {photos.length === 0 ? (
             <>
-              <Upload aria-hidden="true" size={28} className="text-violet-text" />
-              <p className="text-body-lg">Take a photo of your prescription or medicine label</p>
-              <p className="text-label font-normal text-ink-muted">If the label wraps round the bottle, add up to {MAX_PHOTOS} photos of different sides. We read them, then you check every detail.</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <button type="button" className="pz-btn pz-btn--primary" onClick={() => camera.current?.click()}><Camera aria-hidden="true" size={20} />Take photo</button>
-                <button type="button" className="pz-btn pz-btn--secondary" onClick={() => gallery.current?.click()}><ImagePlus aria-hidden="true" size={20} />Upload from gallery</button>
+              <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
+                <button type="button" className="pz-btn pz-btn--primary w-full sm:w-auto" onClick={() => camera.current?.click()}><Camera aria-hidden="true" size={20} />Take a photo</button>
+                <button type="button" className="pz-link inline-flex items-center gap-1.5 text-label" onClick={() => gallery.current?.click()}><ImagePlus aria-hidden="true" size={16} />or choose from your photos</button>
               </div>
+              <p className="text-caption text-ink-muted">JPG, PNG or WebP, up to {MAX_MB} MB each. We read it, then you check every detail.</p>
             </>
           ) : (
             <>
@@ -136,22 +150,27 @@ export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
                 {photos.map((p, i) => (
                   <li key={p.url} className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.url} alt={`Label photo ${i + 1}`} className="h-24 w-24 rounded-md border border-line object-cover" />
+                    <img src={p.url} alt={`Label photo ${i + 1}`} className="h-24 w-24 rounded-[18px] border-2 border-white object-cover shadow-[0_6px_16px_rgba(59,47,143,0.15)]" />
                     <button type="button" onClick={() => remove(i)} aria-label={`Remove photo ${i + 1}`}
-                      className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-pill border border-line bg-surface-raised"><X aria-hidden="true" size={16} /></button>
+                      className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-pill border border-line bg-surface-raised shadow-sm"><X aria-hidden="true" size={16} /></button>
                   </li>
                 ))}
               </ul>
               <p className="text-label font-normal text-ink-muted">{photos.length} of {MAX_PHOTOS} photos. Add another side if part of the label is hidden.</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <button type="button" className="pz-btn pz-btn--primary" onClick={read}><Sparkles aria-hidden="true" size={20} />Read label</button>
-                {photos.length < MAX_PHOTOS && <button type="button" className="pz-btn pz-btn--secondary" onClick={() => camera.current?.click()}><Camera aria-hidden="true" size={20} />Add another side</button>}
-                {photos.length < MAX_PHOTOS && <button type="button" className="pz-btn pz-btn--ghost" onClick={() => gallery.current?.click()}><ImagePlus aria-hidden="true" size={20} />From gallery</button>}
+              <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
+                <button type="button" className="pz-btn pz-btn--primary w-full sm:w-auto" onClick={read}><Sparkles aria-hidden="true" size={20} />Read label</button>
+                {photos.length < MAX_PHOTOS && (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    <button type="button" className="pz-link inline-flex items-center gap-1.5 text-label" onClick={() => camera.current?.click()}><Camera aria-hidden="true" size={16} />Add another side</button>
+                    <button type="button" className="pz-link inline-flex items-center gap-1.5 text-label" onClick={() => gallery.current?.click()}><ImagePlus aria-hidden="true" size={16} />From your photos</button>
+                  </div>
+                )}
               </div>
             </>
           )}
         </div>
       )}
+      {(f || busy === "read") && <h2 id="scan-h" className="text-h2">Scan a prescription</h2>}
       {busy === "read" && <Loader label={`Reading ${photos.length > 1 ? `${photos.length} photos of your label` : "your label"}…`} />}
       {saved && <Notice tone="success">{saved}</Notice>}
       {err && <Notice tone="danger">{err}</Notice>}

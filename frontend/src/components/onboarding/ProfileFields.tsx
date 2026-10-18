@@ -116,20 +116,20 @@ export function ConditionFields({ d, set }: P) {
   );
 }
 
-// Drag to set distance: 5 to 100 miles in steps of 5, with "Any distance" past the end (stored as 0).
-const ANY = 105;
+// Drag to set distance: 5 to 160 km in steps of 5, with "Any distance" past the end (stored as 0).
+const ANY = 165;
 function TravelSlider({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const id = useId();
-  const n = value === "" ? 25 : Number(value) === 0 ? ANY : Number(value);
-  const label = n === ANY ? "Any distance" : `${n} mi`;
+  const n = value === "" ? 40 : Number(value) === 0 ? ANY : Number(value);
+  const label = n === ANY ? "Any distance" : `${n} km`;
   const pct = ((n - 5) / (ANY - 5)) * 100;
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="pz-field__label">How far would you travel for trial visits?</label>
       <p className="text-h2 tabular-nums text-violet-text" aria-hidden="true">{value === "" ? "Not set" : label}</p>
       <input id={id} type="range" min={5} max={ANY} step={5} value={n} className="pz-range" style={{ "--pz-fill": `${pct}%` } as React.CSSProperties}
-        aria-valuetext={n === ANY ? "Any distance" : `Up to ${n} miles`} onChange={(e) => onChange(Number(e.target.value) === ANY ? "0" : e.target.value)} />
-      <div className="flex justify-between text-caption text-ink-muted" aria-hidden="true"><span>5 mi</span><span>Any distance</span></div>
+        aria-valuetext={n === ANY ? "Any distance" : `Up to ${n} kilometres`} onChange={(e) => onChange(Number(e.target.value) === ANY ? "0" : e.target.value)} />
+      <div className="flex justify-between text-caption text-ink-muted" aria-hidden="true"><span>5 km</span><span>Any distance</span></div>
       <span className="pz-field__help">Drag to set how far. Most trials need regular visits to the hospital or clinic running them.</span>
     </div>
   );

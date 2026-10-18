@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Logo, LogoIcon } from "@/components/brand/Logo";
 import { Loader, Notice, errorMessage } from "@/components/ui/pz";
 import { PreviewBanner } from "@/components/ui/PreviewBanner";
+import { pageReady, supportsViewTransitions, transitionClick } from "@/lib/viewTransition";
 
 // `short` is the label in the phone tab bar, where five items share the width.
 const NAV = [
@@ -42,6 +43,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(id);
   }, [router]);
 
+  // Tell a running page transition the new page is here, and let CSS know transitions are available.
+  useEffect(() => { pageReady(); }, [path]);
+  useEffect(() => { document.documentElement.classList.toggle("pz-vt", supportsViewTransitions()); }, []);
+
   function toggle() {
     setCollapsed((c) => { try { localStorage.setItem(SIDEBAR_KEY, c ? "0" : "1"); } catch { /* storage off */ } return !c; });
   }
@@ -54,12 +59,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:inset-x-0 focus:top-0 focus:z-50 focus:block focus:bg-violet focus:px-4 focus:py-3 focus:text-violet-on focus:font-semibold">Skip to content</a>
 
       {/* Phone: a big centred logo that scrolls away with the page (the tab bar stays). */}
-      <header className="flex items-center justify-center px-4 pb-2 pt-[calc(env(safe-area-inset-top)+16px)] md:hidden">
+      <header className="pz-vt-logo flex items-center justify-center px-4 pb-2 pt-[calc(env(safe-area-inset-top)+16px)] md:hidden">
         <Logo href="/dashboard" width={176} />
       </header>
 
       {/* Desktop: collapsible frosted sidebar. */}
-      <aside data-collapsed={collapsed} data-ready={ready} className={cn("pz-sidebar pz-glass hidden border-r border-line md:sticky md:top-0 md:flex md:h-screen md:shrink-0 md:flex-col", collapsed ? "md:w-[84px]" : "md:w-64")}>
+      <aside data-collapsed={collapsed} data-ready={ready} className={cn("pz-sidebar pz-vt-sidebar pz-glass hidden border-r border-line md:sticky md:top-0 md:flex md:h-screen md:shrink-0 md:flex-col", collapsed ? "md:w-[84px]" : "md:w-64")}>
         <div className={cn("flex items-center gap-2 py-5", collapsed ? "flex-col px-3" : "justify-between px-4")}>
           {collapsed ? <Link href="/dashboard" aria-label="PhaseZero home" className="flex h-11 w-11 items-center justify-center"><LogoIcon size={30} /></Link> : <Logo href="/dashboard" width={136} />}
           <button type="button" onClick={toggle} className="pz-btn pz-btn--icon" aria-label={collapsed ? "Expand menu" : "Collapse menu"} aria-expanded={!collapsed}>
@@ -70,7 +75,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <ul className="flex flex-col gap-1">
             {NAV.map((n) => (
               <li key={n.href}>
-                <Link href={n.href} aria-current={active(n.href) ? "page" : undefined} title={collapsed ? n.label : undefined}
+                <Link href={n.href} onClick={transitionClick(router, n.href, path)} aria-current={active(n.href) ? "page" : undefined} title={collapsed ? n.label : undefined}
                   className={cn("relative flex min-h-tap items-center gap-3 rounded-md px-3 font-medium transition-colors duration-200",
                     collapsed && "justify-center px-0",
                     active(n.href) ? "bg-violet text-violet-on shadow-[0_6px_16px_rgba(59,47,143,0.28)]" : "text-ink hover:bg-violet-soft")}>
@@ -93,7 +98,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Phone: floating tab bar, clear of the home indicator, with a pill that slides to the active tab.
           Sign out sits at the end as a narrower icon-only slot. */}
-      <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 mb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Main" className="pz-vt-tabbar fixed inset-x-3 bottom-3 z-30 mb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="pz-glass relative rounded-[28px] border border-line p-1.5 shadow-[0_12px_32px_rgba(28,26,51,0.16)]">
           <span aria-hidden="true" className="pz-tabbar__pill absolute inset-y-1.5 left-1.5 w-[calc((100%-12px-48px)/5)] rounded-[22px] bg-violet shadow-[0_6px_16px_rgba(59,47,143,0.35)]"
             style={{ transform: `translateX(${activeIndex * 100}%)` }} />
@@ -102,7 +107,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               const on = active(n.href);
               return (
                 <li key={n.href}>
-                  <Link href={n.href} aria-current={on ? "page" : undefined}
+                  <Link href={n.href} onClick={transitionClick(router, n.href, path)} aria-current={on ? "page" : undefined}
                     className={cn("flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-[22px] text-[11.5px] font-medium tracking-[-0.01em] transition-colors duration-300", on ? "text-violet-on" : "text-ink-muted")}>
                     <n.icon aria-hidden="true" size={22} strokeWidth={on ? 2.4 : 2} />
                     {n.short}
@@ -122,7 +127,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0 flex-1">
         <PreviewBanner />
-        <main id="main" className="min-w-0 px-4 pb-32 pt-6 md:px-10 md:py-10">
+        <main id="main" className="pz-vt-page min-w-0 px-4 pb-32 pt-6 md:px-10 md:py-10">
           <div key={path} className="pz-page-in mx-auto flex max-w-5xl flex-col gap-8">
             {session?.demo_mode && <span className="pz-badge pz-badge--neutral self-start md:hidden"><FlaskConical aria-hidden="true" />Demo mode · sample data</span>}
             {err ? <Notice tone="danger">{err}</Notice> : session ? children : <Loader label="Checking you're signed in…" />}

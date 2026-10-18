@@ -368,9 +368,13 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 
 /* Page change: content fades and rises in. */
 @keyframes pz-page-in { from { opacity: .35; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.pz-page-in { animation: pz-page-in .45s var(--ease-out) both; }
-.pz-page-in > * { animation: pz-page-in .5s var(--ease-out) both; }
-.pz-page-in > *:nth-child(2) { animation-delay: .04s; } .pz-page-in > *:nth-child(3) { animation-delay: .08s; } .pz-page-in > *:nth-child(4) { animation-delay: .12s; }
+/* Page change: the whole page fades in softly as one piece (no sliding, no stagger), so the only
+   movement on Home is the greeting typing itself out. */
+@keyframes pz-fade { from { opacity: 0; } to { opacity: 1; } }
+.pz-page-in { animation: pz-fade .45s ease-out both; }
+/* Typing caret for the greeting. */
+.pz-caret { display: inline-block; width: 2px; height: .9em; margin-left: 2px; vertical-align: -0.08em; background: currentColor; border-radius: 1px; animation: pz-blink .9s steps(1) infinite; }
+@keyframes pz-blink { 50% { opacity: 0; } }
 
 /* Sidebar collapse */
 .pz-sidebar__label { white-space: nowrap; }
@@ -382,7 +386,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .pz-tabbar__pill { transition: transform .4s var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
-  .pz-page-in, .pz-page-in > *, .pz-sidebar, .pz-sidebar__label, .pz-tabbar__pill { animation: none !important; transition: none !important; }
+  .pz-page-in, .pz-page-in > *, .pz-caret, .pz-sidebar, .pz-sidebar__label, .pz-tabbar__pill { animation: none !important; transition: none !important; }
 }
 /* Popovers open with a short scale-and-fade. */
 @keyframes pz-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -429,3 +433,22 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .pz-range:active::-webkit-slider-thumb { transform: scale(1.12); }
 .pz-range:focus-visible { outline: none; }
 .pz-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--focus); outline-offset: 3px; }
+.pz-fade { animation: pz-fade .35s ease both; }
+@media (prefers-reduced-motion: reduce) { .pz-fade { animation: none !important; } }
+/* ---------- Seamless page changes (View Transitions, lib/viewTransition.ts) ----------
+   Logo, sidebar and tab bar keep their own layers so they stay still; only the page content dissolves:
+   the old page softly blurs out while the new one rises in. Everything else swaps instantly. */
+.pz-vt-page { view-transition-name: pz-page; }
+.pz-vt-logo { view-transition-name: pz-logo; }
+.pz-vt-sidebar { view-transition-name: pz-sidebar; }
+.pz-vt-tabbar { view-transition-name: pz-tabbar; }
+.pz-vt .pz-page-in { animation: none; } /* the transition does the fading */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-group(pz-page) { animation: none; }
+::view-transition-old(pz-page) { animation: pz-vt-out .22s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(pz-page) { animation: pz-vt-in .42s cubic-bezier(.22, 1, .36, 1) .06s both; }
+@keyframes pz-vt-out { to { opacity: 0; filter: blur(4px); } }
+@keyframes pz-vt-in { from { opacity: 0; filter: blur(4px); transform: translateY(10px); } }
+::view-transition-group(pz-tabbar), ::view-transition-group(pz-sidebar) { animation-duration: .3s; }
+::view-transition-group(pz-logo) { animation: none; }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
