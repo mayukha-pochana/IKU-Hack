@@ -19,7 +19,7 @@ from app.services.agent import engine
 from app.services.trials import simplify
 from conftest import SAMPLE_STUDY
 
-USER = SimpleNamespace(id=uuid.UUID("bbbbbbbb-2222-4222-8222-222222222222"), email="maya.demo@example.com")
+USER = SimpleNamespace(id=uuid.UUID("bbbbbbbb-2222-4222-8222-222222222222"), email="barbra.demo@example.com")
 REAL_CLIENT = httpx.AsyncClient
 NCT = "NCT00000042"
 CRITERIA = "Inclusion Criteria:\n- Adults with asthma\nExclusion Criteria:\n- Insulin use in the last 3 months"
@@ -68,7 +68,7 @@ def world(db, monkeypatch):
     simplify._cache.clear()
     db.add(User(id=USER.id, email=USER.email))
     db.commit()
-    db.add(PatientProfile(user_id=USER.id, display_name="Synthetic Maya", age=28, conditions=["Asthma"],
+    db.add(PatientProfile(user_id=USER.id, display_name="Synthetic Barbra", age=28, conditions=["Asthma"],
                           location="London"))
     db.commit()
     state = SimpleNamespace(registry_status="RECRUITING", criteria=CRITERIA, gemini_down=False, sensor=False,
@@ -85,7 +85,7 @@ def world(db, monkeypatch):
             return gemini({"facts": state.correction_facts})
         state.screenings += 1
         record = json.loads(prompt.rsplit("<patient_record>", 1)[1].split("</patient_record>")[0])
-        assert "Synthetic Maya" not in prompt and USER.email not in prompt
+        assert "Synthetic Barbra" not in prompt and USER.email not in prompt
         return gemini(screening_for(record, state.sensor))
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: REAL_CLIENT(transport=httpx.MockTransport(handler), **kw))
     app.dependency_overrides[get_current_user] = lambda: USER
@@ -168,7 +168,7 @@ def test_events_are_coalesced_into_one_screening(world):
     world.client.post(f"/api/trials/{NCT}/explain")
     before = world.screenings
     confirm_insulin(world.client)
-    world.client.put("/api/profile", json={"display_name": "Synthetic Maya", "age": 29, "conditions": ["Asthma"],
+    world.client.put("/api/profile", json={"display_name": "Synthetic Barbra", "age": 29, "conditions": ["Asthma"],
                                            "location": "London"})
     body, _ = conclusion(world.client)
     assert len(body["handled_events"]) == 2

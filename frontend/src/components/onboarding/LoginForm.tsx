@@ -70,7 +70,7 @@ export function LoginForm() {
         <button type="button" onClick={demo} disabled={busy !== null} aria-busy={busy === "demo"} className="pz-btn pz-btn--secondary">
           {busy === "demo" ? <><Spinner /> Signing in…</> : <><FlaskConical aria-hidden="true" size={20} /> Try the demo account</>}
         </button>
-        <p className="text-caption text-ink-muted">Demo mode: signs you in as Maya, a sample patient. All data is synthetic.</p>
+        <p className="text-caption text-ink-muted">Demo mode: signs you in as Barbra, a sample patient. All data is synthetic.</p>
       </div>
       {previewAvailable && (
         <div className="flex flex-col gap-2 rounded-md border border-dashed border-line-strong p-4">

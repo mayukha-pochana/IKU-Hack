@@ -86,7 +86,7 @@ After `POST /api/health-checkins` succeeds, call `GET /api/agent/updates`:
 ## Demo trial
 NCT07760883 (Metformin Effects According to SLC16A11 Carrier Status).
 
-Demo patient: Maya, 52, type 2 diabetes, London, taking Metformin.
+Demo patient: Barbra, 52, type 2 diabetes, London, taking Metformin.
 
 1. Open the trial: **We need to check**.
 2. Add Insulin glargine on the medications page. The dashboard says **1 trial changed**, and the card shows **Not a fit right now**, with the insulin reason.

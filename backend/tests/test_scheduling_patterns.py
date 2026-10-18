@@ -22,7 +22,7 @@ from app.schemas.medications import ConfirmedSchedule
 from app.services.scheduling.generator import generate_dose_times
 
 LONDON = ZoneInfo("Europe/London")
-ME = SimpleNamespace(id=uuid.UUID("dddddddd-4444-4444-8444-444444444444"), email="maya.demo@example.com")
+ME = SimpleNamespace(id=uuid.UUID("dddddddd-4444-4444-8444-444444444444"), email="barbra.demo@example.com")
 OTHER = uuid.UUID("eeeeeeee-5555-4555-8555-555555555555")
 REAL_CLIENT = httpx.AsyncClient
 

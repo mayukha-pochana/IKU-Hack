@@ -21,7 +21,7 @@ from app.services.gemini.prescription_parser import parse_prescription_image
 from app.services.trials import simplify
 from conftest import SAMPLE_STUDY
 
-USER = SimpleNamespace(id=uuid.UUID("aaaaaaaa-1111-4111-8111-111111111111"), email="maya.demo@example.com")
+USER = SimpleNamespace(id=uuid.UUID("aaaaaaaa-1111-4111-8111-111111111111"), email="barbra.demo@example.com")
 REAL_CLIENT = httpx.AsyncClient
 
 
@@ -40,7 +40,7 @@ def seed(db):
             db.add(User(id=USER.id, email=USER.email))
             db.commit()
         if profile:
-            db.add(PatientProfile(**(dict(user_id=USER.id, display_name="Synthetic Maya", age=28,
+            db.add(PatientProfile(**(dict(user_id=USER.id, display_name="Synthetic Barbra", age=28,
                                           conditions=["Asthma"], location="London") | changes)))
         for med in meds:
             db.add(Medication(user_id=USER.id, frequency=None, confirmed_schedule={}, **med))
@@ -138,7 +138,7 @@ def test_explain_rolls_up_deterministically_and_caches(seed, mock_http):
         calls.append(request)
         prompt = json.loads(request.content)["contents"][0]["parts"][0]["text"]
         assert "untrusted" in prompt and "Salbutamol" in prompt
-        assert "Synthetic Maya" not in prompt and USER.email not in prompt
+        assert "Synthetic Barbra" not in prompt and USER.email not in prompt
         return gemini_ok(explanation([criterion("inclusion", "Adults", "YES", "age: 28"),
                                       criterion("exclusion", "Pregnancy", "UNKNOWN")]))
     mock_http(handler)
@@ -185,7 +185,7 @@ def test_matches_use_snowflake_cortex_when_configured(seed, mock_http, monkeypat
             assert request.headers["x-snowflake-authorization-token-type"] == "PROGRAMMATIC_ACCESS_TOKEN"
             body = json.loads(request.content)
             assert "Asthma" in body["query"] and "Salbutamol" in body["query"] and "20-29 year old" in body["query"]
-            assert "Synthetic Maya" not in body["query"]
+            assert "Synthetic Barbra" not in body["query"]
             assert body["filter"] == {"@eq": {"status": "RECRUITING"}}
             return httpx.Response(200, json={"results": [{"nct_id": "NCT00000009", "ai_summary": "Summary B"},
                                                          {"nct_id": "NCT00000008", "ai_summary": "Summary A"}]})

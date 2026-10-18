@@ -44,7 +44,7 @@ def demo_login(response: Response, db: Session = Depends(get_db)):
     """DEMO MODE ONLY - disabled unless DEMO_AUTH_ENABLED=true. Not production auth."""
     if not settings.demo_auth_enabled:
         raise AppError("demo_disabled", "Demo login is disabled.", 403)
-    _set_cookie(response, get_or_create_user(db, "maya.demo@example.com"))
+    _set_cookie(response, get_or_create_user(db, "barbra.demo@example.com"))
     return {"status": "ok", "demo_mode": True}
 
 
