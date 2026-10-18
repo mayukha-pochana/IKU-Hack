@@ -3,10 +3,34 @@ import re
 from app.models.patient import PatientProfile
 from app.schemas.trials import MatchStatus, Trial, TrialMatch
 
+MAX_ITEMS = 8
+MAX_ITEM_CHARS = 200
+_BULLET = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)])\s+")
+_HEADER = re.compile(r"^\s*(?:inclusion|exclusion)\s+criteria\s*:?\s*$", re.I)
+
 
 def _age_years(s: str | None) -> int | None:
     m = re.match(r"(\d+)\s*Years?", s or "", re.I)
     return int(m.group(1)) if m else None
+
+
+def extract_criteria_items(text: str | None, limit: int = MAX_ITEMS) -> list[str]:
+    """Split ClinicalTrials.gov criteria text into individual bullet items.
+    Wrapped lines are joined to the previous bullet. Items are shortened, never reworded."""
+    if not text:
+        return []
+    items: list[str] = []
+    for line in text.splitlines():
+        if not line.strip() or _HEADER.match(line):
+            continue
+        if _BULLET.match(line):
+            items.append(_BULLET.sub("", line).strip())
+        elif items:
+            items[-1] += " " + line.strip()      # continuation of a wrapped bullet
+        else:
+            items.append(line.strip())           # unbulleted free text
+    items = [i if len(i) <= MAX_ITEM_CHARS else i[: MAX_ITEM_CHARS - 1].rstrip() + "\u2026" for i in items]
+    return items[:limit]
 
 
 def match_trial(profile: PatientProfile, trial: Trial) -> TrialMatch:
@@ -39,8 +63,12 @@ def match_trial(profile: PatientProfile, trial: Trial) -> TrialMatch:
         else:
             missing.append(f"No listed site matching {profile.location}.")
 
-    if trial.exclusion_criteria:
-        confirm.append("Exclusion criteria (including medications and history) need study-team review.")
+    # Exclusion criteria: list each stated item for the study team to check.
+    # We do NOT judge whether the patient meets them.
+    for item in extract_criteria_items(trial.exclusion_criteria):
+        confirm.append(f"Study team will check: {item}")
+    if trial.exclusion_criteria and not confirm:
+        confirm.append("Exclusion criteria need study-team review.")
     # TODO(M3): medication-related criteria check using patient's confirmed meds (read-only).
 
     status = (
