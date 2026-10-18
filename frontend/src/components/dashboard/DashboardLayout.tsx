@@ -15,7 +15,7 @@ import { PreviewBanner } from "@/components/ui/PreviewBanner";
 // `short` is the label in the phone tab bar, where five items share the width.
 const NAV = [
   { href: "/dashboard", label: "Dashboard", short: "Home", icon: LayoutDashboard },
-  { href: "/medications", label: "My medications", short: "Medicines", icon: Pill },
+  { href: "/medications", label: "My medications", short: "Meds", icon: Pill },
   { href: "/trials", label: "Clinical trials", short: "Trials", icon: Search },
   { href: "/check-in", label: "Daily diary", short: "Diary", icon: NotebookPen },
   { href: "/profile", label: "My profile", short: "Profile", icon: UserRound },
@@ -54,9 +54,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:inset-x-0 focus:top-0 focus:z-50 focus:block focus:bg-violet focus:px-4 focus:py-3 focus:text-violet-on focus:font-semibold">Skip to content</a>
 
       {/* Phone: a big centred logo that scrolls away with the page (the tab bar stays). */}
-      <header className="relative flex items-center justify-center px-4 pb-2 pt-5 md:hidden">
+      <header className="flex items-center justify-center px-4 pb-2 pt-[calc(env(safe-area-inset-top)+16px)] md:hidden">
         <Logo href="/dashboard" width={176} />
-        <button type="button" onClick={signOut} className="pz-btn pz-btn--icon absolute right-4 top-1/2 -translate-y-1/2 !mt-1.5" aria-label="Sign out"><LogOut aria-hidden="true" size={20} /></button>
       </header>
 
       {/* Desktop: collapsible frosted sidebar. */}
@@ -92,24 +91,31 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Phone: floating tab bar, clear of the home indicator, with a pill that slides to the active tab. */}
+      {/* Phone: floating tab bar, clear of the home indicator, with a pill that slides to the active tab.
+          Sign out sits at the end as a narrower icon-only slot. */}
       <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 mb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="pz-glass relative rounded-[28px] border border-line p-1.5 shadow-[0_12px_32px_rgba(28,26,51,0.16)]">
-          <span aria-hidden="true" className="pz-tabbar__pill absolute inset-y-1.5 left-1.5 w-[calc((100%-12px)/5)] rounded-[22px] bg-violet shadow-[0_6px_16px_rgba(59,47,143,0.35)]"
+          <span aria-hidden="true" className="pz-tabbar__pill absolute inset-y-1.5 left-1.5 w-[calc((100%-12px-48px)/5)] rounded-[22px] bg-violet shadow-[0_6px_16px_rgba(59,47,143,0.35)]"
             style={{ transform: `translateX(${activeIndex * 100}%)` }} />
-          <ul className="relative grid grid-cols-5">
+          <ul className="relative grid grid-cols-[repeat(5,minmax(0,1fr))_48px]">
             {NAV.map((n) => {
               const on = active(n.href);
               return (
                 <li key={n.href}>
                   <Link href={n.href} aria-current={on ? "page" : undefined}
-                    className={cn("flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-[22px] text-[13px] font-medium transition-colors duration-300", on ? "text-violet-on" : "text-ink-muted")}>
+                    className={cn("flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-[22px] text-[11.5px] font-medium tracking-[-0.01em] transition-colors duration-300", on ? "text-violet-on" : "text-ink-muted")}>
                     <n.icon aria-hidden="true" size={22} strokeWidth={on ? 2.4 : 2} />
                     {n.short}
                   </Link>
                 </li>
               );
             })}
+            <li className="flex items-center border-l border-line">
+              <button type="button" onClick={signOut} aria-label="Sign out"
+                className="flex min-h-[56px] w-full items-center justify-center rounded-[22px] text-ink-muted transition-colors hover:text-ink">
+                <LogOut aria-hidden="true" size={20} />
+              </button>
+            </li>
           </ul>
         </div>
       </nav>

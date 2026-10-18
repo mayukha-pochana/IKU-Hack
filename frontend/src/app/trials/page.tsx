@@ -14,6 +14,8 @@ import { ClinicalTrialInfo, MatchTypeInfo } from "@/components/ui/InfoTip";
 import { PhaseFilter } from "@/components/trials/PhaseFilter";
 import { cn } from "@/lib/utils";
 import { phaseLabel } from "@/components/trials/TrialMatchCard";
+import { PoundSterling } from "lucide-react";
+import { isPaid } from "@/lib/payment";
 
 const ORDER: MatchStatus[] = ["POTENTIAL_MATCH", "MORE_INFORMATION_NEEDED", "KNOWN_CRITERIA_MISMATCH"];
 type View = "best" | MatchStatus | "all";
@@ -31,13 +33,16 @@ export default function TrialsPage() {
   const [retry, setRetry] = useState(0);
   const [view, setView] = useState<View>("best");
   const [phases, setPhases] = useState<string[]>([]); // empty = any phase
+  const [paidOnly, setPaidOnly] = useState(false);
 
   useEffect(() => { setErr(null); setM(null); trials.matches().then((x) => { saveMatches(x); setM(x); }).catch((e) => setErr(errorMessage(e))); }, [retry]);
 
   const statuses = VIEWS.find((v) => v.value === view)!.statuses;
   const phasesOf = (x: TrialMatch) => (x.trial.phases.length ? x.trial.phases.map(phaseLabel) : ["No phase"]);
-  const inView = (m ?? []).filter((x) => statuses.includes(x.status));
-  const viewCount = (v: (typeof VIEWS)[number]) => (m ?? []).filter((x) => v.statuses.includes(x.status) && (phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))).length;
+  const paidOk = (x: TrialMatch) => !paidOnly || isPaid(x.trial);
+  const inView = (m ?? []).filter((x) => statuses.includes(x.status) && paidOk(x));
+  const viewCount = (v: (typeof VIEWS)[number]) => (m ?? []).filter((x) => v.statuses.includes(x.status) && paidOk(x) && (phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))).length;
+  const paidCount = (m ?? []).filter((x) => statuses.includes(x.status) && isPaid(x.trial) && (phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))).length;
   const phaseCount = (p: string) => inView.filter((x) => phasesOf(x).includes(p)).length;
   const shown = inView
     .filter((x) => phases.length === 0 || phasesOf(x).some((p) => phases.includes(p)))
@@ -75,10 +80,16 @@ export default function TrialsPage() {
                   })}
                 </div>
               </div>
+              <button type="button" aria-pressed={paidOnly} onClick={() => setPaidOnly(!paidOnly)} title="Only trials that say they pay participants or cover costs"
+                className={cn("inline-flex h-10 shrink-0 items-center gap-1 rounded-pill border-[1.5px] px-2.5 text-label transition-colors sm:px-3",
+                  paidOnly ? "border-[#f4cf5d] bg-[#fff4d6] text-[#8a6206]" : "border-line-strong bg-surface-raised text-ink hover:border-violet")}>
+                <PoundSterling aria-hidden="true" size={15} /><span className="max-sm:sr-only">Paid</span><span className="sr-only"> trials only</span>
+                <span className={cn("rounded-pill px-1.5 text-[13px] leading-5", paidOnly ? "bg-white/70" : "bg-violet-soft text-violet-text")}>{paidCount}</span>
+              </button>
               <PhaseFilter selected={phases} onChange={setPhases} count={phaseCount} />
             </div>
             {shown.length ? <div className="grid gap-4 lg:grid-cols-2">{shown.map((x) => <TrialMatchCard key={x.trial.nct_id} match={x} />)}</div>
-              : <p className="text-ink-muted">No trials match these filters. Try another view or clear the phase filter.</p>}
+              : <p className="text-ink-muted">No trials match these filters. Try another view, or clear the Paid and phase filters.</p>}
           </>
         )}
       </section>

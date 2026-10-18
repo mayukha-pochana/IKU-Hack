@@ -338,7 +338,21 @@ select.pz-field__input:hover { border-color: var(--violet); }
   --ease-out: cubic-bezier(.22, .9, .3, 1);
 }
 .dark { --app-gradient: radial-gradient(1100px 620px at -5% -15%, rgba(107, 92, 231, 0.28), transparent 62%), radial-gradient(900px 560px at 105% 0%, rgba(60, 200, 161, 0.14), transparent 60%), var(--surface); }
-body { background: var(--app-gradient); background-attachment: fixed; }
+/* The gradient sits on a fixed layer (iOS ignores background-attachment: fixed), reaching under the status bar. */
+html { background: var(--surface); }
+body { background: transparent; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--app-gradient); }
+/* Phones: Safari paints the strips behind the status bar and the bottom toolbar one flat colour (the page
+   background). So on phones the gradient is only colour in the middle of the screen: it fades into that exact
+   colour at the top, and the bottom (no peach glow) is plain page colour, reaching under the toolbar (100lvh). */
+@media (max-width: 767px) {
+  body::before { bottom: auto; height: 100lvh;
+    background:
+      linear-gradient(to bottom, var(--surface) 0, transparent 120px),
+      radial-gradient(700px 520px at -10% 8%, rgba(107, 92, 231, 0.16), transparent 65%),
+      radial-gradient(600px 480px at 110% 18%, rgba(60, 200, 161, 0.15), transparent 62%),
+      var(--surface); }
+}
 
 /* Frosted panels for navigation; cards stay solid white for readability. */
 .pz-glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px); }
@@ -402,9 +416,9 @@ body { background: var(--app-gradient); background-attachment: fixed; }
 /* Compact badges so a trial's match, phase and status sit on one row on phones. */
 .pz-badge-row > * { flex-shrink: 0; white-space: nowrap; }
 @media (max-width: 480px) { .pz-badge-row { gap: 4px !important; } .pz-badge-row > .pz-badge { padding: 4px 8px; font-size: 13px; line-height: 18px; gap: 3px; } .pz-badge-row > .pz-badge svg { width: 14px; height: 14px; } }
-/* Centred value (date of birth), including the native date display on iOS/Android. */
-.pz-field--center .pz-field__input { text-align: center; }
-.pz-field--center .pz-field__input::-webkit-date-and-time-value { text-align: center; }
+/* Date fields line up on the left like every other field (iOS centres them by default). */
+.pz-field__input[type="date"] { text-align: left; }
+.pz-field__input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 /* Drag slider (travel distance): violet fill up to the thumb, big touch-friendly thumb. */
 .pz-range { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; cursor: pointer; }
 .pz-range::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(to right, var(--violet) var(--pz-fill, 0%), var(--violet-soft) var(--pz-fill, 0%)); }

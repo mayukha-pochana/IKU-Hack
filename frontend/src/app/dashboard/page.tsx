@@ -29,7 +29,10 @@ export default function Dashboard() {
   }, []);
   useEffect(() => { schedule.week().then((w) => setNext(nextDose(w) ?? null)).catch(() => setNext(null)); }, [tick]);
 
-  const possible = matches?.filter((m) => m.status === "POTENTIAL_MATCH").length ?? 0;
+  const possibleList = matches?.filter((m) => m.status === "POTENTIAL_MATCH") ?? [];
+  const possible = possibleList.length;
+  // One match: open that trial straight away. More: open the list.
+  const matchHref = possible === 1 ? `/trials/${encodeURIComponent(possibleList[0].trial.nct_id)}` : "/trials";
   const shown = matches?.filter((m) => m.status !== "KNOWN_CRITERIA_MISMATCH").slice(0, 3) ?? [];
   return (
     <DashboardLayout>
@@ -43,7 +46,7 @@ export default function Dashboard() {
             <span>{next === undefined ? "Checking your next dose…" : next ? <>Next dose <strong className="font-semibold">{time24(next.scheduled_at)}</strong> · {next.medication_name}</> : "Nothing else scheduled this week"}</span>
           </span>
           {matches && possible > 0 && (
-            <Link href="/trials" className="pz-hero__chip transition-colors hover:bg-white/25"><Search aria-hidden="true" size={18} /><span>{possible} possible trial {possible === 1 ? "match" : "matches"}</span><ArrowRight aria-hidden="true" size={16} /></Link>
+            <Link href={matchHref} className="pz-hero__chip transition-colors hover:bg-white/25"><Search aria-hidden="true" size={18} /><span>{possible} possible trial {possible === 1 ? "match" : "matches"}</span><ArrowRight aria-hidden="true" size={16} /></Link>
           )}
         </div>
       </section>

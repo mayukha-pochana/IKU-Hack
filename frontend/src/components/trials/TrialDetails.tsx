@@ -1,13 +1,14 @@
 // OWNER: Member 2 - trial overview, location, criteria, known mismatches, open questions and the official link.
 "use client";
 import { useEffect, useState } from "react";
-import { Activity, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
+import { Activity, PoundSterling, Bookmark, BookmarkCheck, Check, CircleHelp, ExternalLink, MapPin, Pill, Stethoscope, UsersRound, X } from "lucide-react";
 import { trials } from "@/lib/api";
 import type { Trial, TrialExplanation, TrialMatch } from "@/types";
 import { Loader, MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
 import { CriteriaInfo, PhaseInfo } from "@/components/ui/InfoTip";
 import { TrialStatusBadge, ageRange, phaseLabel } from "./TrialMatchCard";
 import { ExplanationCriteria, ExplanationExtras } from "./TrialExplanation";
+import { paymentNote } from "@/lib/payment";
 
 function List({ items, icon: I, tone }: { items: string[]; icon: typeof Check; tone: string }) {
   return <ul className="flex flex-col gap-2">{items.map((x) => <li key={x} className="flex gap-2"><I aria-hidden="true" size={20} className={`mt-0.5 shrink-0 ${tone}`} />{x}</li>)}</ul>;
@@ -108,6 +109,11 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
           <Fact icon={Activity} label="Recruitment">{t.status ? <TrialStatusBadge status={t.status} /> : "Not listed"}</Fact>
           <Fact icon={Stethoscope} label="Conditions">{t.conditions.join(", ") || "Not listed"}</Fact>
           <Fact icon={Pill} label="Treatments tested">{t.interventions.join(", ") || "Not listed"}</Fact>
+          <Fact icon={PoundSterling} label="Payment for taking part">
+            <span className="block text-body">
+            {paymentNote(t) ?? "Not mentioned"}</span>
+            <span className="mt-1 block text-label font-normal text-ink-muted">{paymentNote(t) ? "In the trial's own words. Check the details with the trial team." : "Ask the trial team whether they pay or cover travel."}</span>
+          </Fact>
         </dl>
       </section>
 

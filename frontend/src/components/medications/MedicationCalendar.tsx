@@ -192,7 +192,7 @@ export function MedicationCalendar({ onDoseChange, refreshKey = 0, showScanLink 
           <button type="button" className="pz-btn pz-btn--icon" style={{ width: 36, minHeight: 36 }} onClick={() => go(active + 1)} disabled={active === meds.length - 1} aria-label="Next medicine"><ChevronRight aria-hidden="true" size={18} /></button>
         </div>
       )}
-      <p className="text-center text-caption text-ink-muted">Tap a dose when you&apos;ve taken it. Tap again to undo. You can log any of today&apos;s doses; later days unlock on the day. The week runs Monday to Sunday.{multi && " Swipe to see your other medicines."}</p>
+      <p className="text-center text-caption text-ink-muted">Tap a dose when you&apos;ve taken it. Tap again to undo. You can log any of today&apos;s doses; later days unlock on the day.</p>
     </div>
   );
 }

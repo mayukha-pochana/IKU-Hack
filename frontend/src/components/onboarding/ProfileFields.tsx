@@ -37,7 +37,7 @@ export function AboutFields({ d, set, errors }: P) {
         <TextField id="last_name" label="Last name" autoComplete="family-name" value={d.last_name}
           onChange={(e) => set({ ...d, last_name: e.target.value })} help="Optional." />
       </div>
-      <TextField id="dob" label="Date of birth" type="date" autoComplete="bday" max={today} min="1900-01-01" className="pz-field--center max-w-[240px]" value={d.dob}
+      <TextField id="dob" label="Date of birth" type="date" autoComplete="bday" max={today} min="1900-01-01" className="max-w-[240px]" value={d.dob}
         onChange={(e) => set({ ...d, dob: e.target.value })} error={errors?.dob}
         help={age != null && age >= 0 ? `You're ${age}. Trials set exact age limits, so this matters.` : d.age != null ? `We have your age as ${d.age}. Add your date of birth for more precise matching.` : "Trials set exact age limits, so this helps us check."} />
       <Choice label="Sex assigned at birth" value={d.sex} options={SEX_OPTIONS} onChange={(v) => set({ ...d, sex: v })}

@@ -33,6 +33,8 @@ export interface Trial {
   inclusion_criteria: string | null; exclusion_criteria: string | null;
   min_age: string | null; max_age: string | null;
   locations: { facility: string | null; city: string | null; country: string | null }[]; url: string;
+  // Payment for taking part, in the trial's own words (requested in docs/requests/trial-compensation.md).
+  compensation?: string | null;
 }
 export interface TrialMatch {
   trial: Trial; status: MatchStatus; why_surfaced: string[]; relevant_criteria: string[];

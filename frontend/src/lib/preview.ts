@@ -60,20 +60,20 @@ function seed(): DB {
 }
 const state = () => (db ??= seed());
 
-const trial = (nct: string, title: string, summary: string, phase: string, place: [string, string]): T.Trial => ({
+const trial = (nct: string, title: string, summary: string, phase: string, place: [string, string], compensation: string | null = null): T.Trial => ({
   nct_id: nct, title, brief_summary: summary, status: "RECRUITING", conditions: ["Asthma"], interventions: ["Inhaled medicine"], phases: [phase],
   inclusion_criteria: "Adults aged 18 to 65\nDiagnosed with asthma for at least 6 months\nUsing an inhaled steroid", exclusion_criteria: "Current smokers\nPregnant or breastfeeding",
-  min_age: "18 Years", max_age: "65 Years", locations: [{ facility: place[0], city: place[1], country: "United Kingdom" }], url: `https://clinicaltrials.gov/trial/${nct}`,
+  min_age: "18 Years", max_age: "65 Years", locations: [{ facility: place[0], city: place[1], country: "United Kingdom" }], url: `https://clinicaltrials.gov/trial/${nct}`, compensation,
 });
 const DISCLAIMER = "Preview sample. Preliminary match only; the trial team decides who can take part.";
 const MATCHES: T.TrialMatch[] = [
-  { trial: trial("NCT-SAMPLE-1", "Sample trial: once-daily inhaler for asthma", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Hospital", "London"]),
+  { trial: trial("NCT-SAMPLE-1", "Sample trial: once-daily inhaler for asthma", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Hospital", "London"], "Sample only: participants are paid for each completed visit, and travel costs are covered."),
     status: "POTENTIAL_MATCH", why_surfaced: ["You have asthma", "You are aged 18 to 65"], relevant_criteria: ["Diagnosed with asthma", "Aged 18 to 65"],
     missing_information: ["How long you have had asthma"], needs_coordinator_confirmation: ["Whether your current inhaler is allowed"], plain_language_summary: null, disclaimer: DISCLAIMER },
   { trial: trial("NCT-SAMPLE-2", "Sample trial: asthma and exercise", "A made-up trial used to preview the screen layout.", "PHASE2", ["Sample Clinic", "Manchester"]),
     status: "MORE_INFORMATION_NEEDED", why_surfaced: ["You have asthma"], relevant_criteria: ["Diagnosed with asthma"],
     missing_information: ["Whether you smoke"], needs_coordinator_confirmation: ["Travel to Manchester for visits"], plain_language_summary: null, disclaimer: DISCLAIMER },
-  { trial: trial("NCT-SAMPLE-3", "Sample trial: severe asthma in older adults", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Centre", "Leeds"]),
+  { trial: trial("NCT-SAMPLE-3", "Sample trial: severe asthma in older adults", "A made-up trial used to preview the screen layout.", "PHASE3", ["Sample Centre", "Leeds"], "Sample only: reasonable travel costs are reimbursed."),
     status: "KNOWN_CRITERIA_MISMATCH", why_surfaced: ["You have asthma"], relevant_criteria: ["Must be aged 50 or over"],
     missing_information: [], needs_coordinator_confirmation: [], plain_language_summary: null, disclaimer: DISCLAIMER },
 ];
