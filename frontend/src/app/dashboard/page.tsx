@@ -14,6 +14,7 @@ import { TrialsChangedNotice } from "@/components/trials/TrialUpdate";
 import { saveMatches } from "@/components/trials/matchCache";
 import { Loader, Notice } from "@/components/ui/pz";
 import { ClinicalTrialInfo } from "@/components/ui/InfoTip";
+import { Typewriter } from "@/components/ui/Typewriter";
 import { dateTimeUK, greeting, time24 } from "@/lib/format";
 
 export default function Dashboard() {
@@ -22,9 +23,12 @@ export default function Dashboard() {
   const [next, setNext] = useState<Dose | null | undefined>(undefined);
   const [last, setLast] = useState<Checkin | null>(null);
   const [tick, setTick] = useState(0);
+  const [nameReady, setNameReady] = useState(false);
+  // The greeting types itself out every time Home opens: greeting, then name, then the subtitle.
+  const [stage, setStage] = useState(0); // 0 greeting, 1 name, 2 subtitle, 3 done
 
   useEffect(() => {
-    profile.get().then((p) => setName(p.display_name)).catch(() => {});
+    profile.get().then((p) => setName(p.display_name)).catch(() => {}).finally(() => setNameReady(true));
     trials.matches().then((m) => { saveMatches(m); setMatches(m); }).catch(() => setMatches([]));
     checkins.list().then((c) => setLast([...c].sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))[0] ?? null)).catch(() => {});
   }, []);
@@ -39,9 +43,11 @@ export default function Dashboard() {
     <DashboardLayout>
       {/* Hero: violet blending into mint, with today's key facts as frosted chips. */}
       <section className="pz-hero" aria-labelledby="hello-h">
-        <p className="text-label font-normal opacity-85">{greeting()}</p>
-        <h1 id="hello-h" className="text-[34px] font-semibold leading-[40px] tracking-[-0.02em] md:text-display">{name || "Welcome back"}</h1>
-        <p className="mt-1 text-body-lg opacity-90">Here&apos;s your day at a glance.</p>
+        <p className="text-label font-normal opacity-85"><Typewriter text={greeting()} speed={40} delay={250} onDone={() => setStage(1)} /></p>
+        <h1 id="hello-h" className="text-[34px] font-semibold leading-[40px] tracking-[-0.02em] md:text-display">
+          <Typewriter text={name || "Welcome back"} start={stage >= 1 && nameReady} speed={70} delay={120} onDone={() => setStage(2)} />
+        </h1>
+        <p className="mt-1 text-body-lg opacity-90"><Typewriter text="Here’s your day at a glance." start={stage >= 2} speed={28} delay={150} onDone={() => setStage(3)} /></p>
         <div className="mt-5 flex flex-wrap gap-2">
           <span className="pz-hero__chip"><Clock aria-hidden="true" size={18} />
             <span>{next === undefined ? "Checking your next dose…" : next ? <>Next dose <strong className="font-semibold">{time24(next.scheduled_at)}</strong> · {next.medication_name}</> : "Nothing else scheduled this week"}</span>

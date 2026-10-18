@@ -1,7 +1,8 @@
 // OWNER: Member 2 - upload -> Gemini extraction -> patient checks and edits every field -> explicit confirm -> save.
 "use client";
 import { useRef, useState } from "react";
-import { Camera, Plus, Trash2, Upload } from "lucide-react";
+import { Camera, Plus, Trash2 } from "lucide-react";
+import { PrescriptionDoodle } from "@/components/ui/Doodles";
 import { medications, prescriptions } from "@/lib/api";
 import type { ParsedPrescription } from "@/types";
 import { Loader, Notice, Spinner, TextField, errorMessage } from "@/components/ui/pz";
@@ -16,7 +17,8 @@ const toForm = (p: ParsedPrescription): Form => ({
 });
 
 export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLInputElement>(null); // opens the camera on phones
+  const library = useRef<HTMLInputElement>(null); // photo library / files
   const [parsed, setParsed] = useState<ParsedPrescription | null>(null);
   const [f, setF] = useState<Form | null>(null);
   const [busy, setBusy] = useState<"read" | "save" | null>(null);
@@ -55,23 +57,40 @@ export function PrescriptionUploader({ onSaved }: { onSaved: () => void }) {
   const setTime = (i: number, v: string) => f && setF({ ...f, times: f.times.map((t, j) => (j === i ? v : t)) });
 
   return (
-    <section className="pz-card" aria-labelledby="scan-h">
-      <h2 id="scan-h" className="pz-card__title">Scan a prescription</h2>
+    <section className="pz-diary !gap-5" aria-labelledby="scan-h">
       {!f && busy !== "read" && (
         <div
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
           onDrop={(e) => { e.preventDefault(); setDrag(false); void onFile(e.dataTransfer.files?.[0]); }}
-          className={`flex flex-col items-center gap-3 rounded-md border-2 border-dashed p-8 text-center ${drag ? "border-violet bg-violet-soft" : "border-line-strong"}`}>
-          <Upload aria-hidden="true" size={28} className="text-violet-text" />
-          <p className="text-body-lg">Take a photo of your prescription or medicine label</p>
-          <p className="text-label font-normal text-ink-muted">JPG, PNG or WebP, up to {MAX_MB} MB. We read it, then you check every detail.</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <button type="button" className="pz-btn pz-btn--primary" onClick={() => input.current?.click()}><Camera aria-hidden="true" size={20} />Scan prescription</button>
+          className={`flex flex-col items-center gap-4 rounded-[22px] text-center transition-colors ${drag ? "bg-violet-soft/70 outline-dashed outline-2 outline-violet" : ""}`}>
+          <PrescriptionDoodle />
+          <div className="flex flex-col gap-1.5">
+            <h2 id="scan-h" className="text-[24px] font-semibold leading-8 tracking-[-0.01em]">Scan a prescription</h2>
+            <p className="mx-auto max-w-[30ch] text-ink-muted">Snap your prescription or medicine label. We read it, then you check every detail.</p>
           </div>
+          {/* Three tiny steps, so it's clear nothing is saved until you check it. */}
+          <ol className="flex items-center gap-2 text-label font-medium" aria-label="How it works">
+            {[["Snap", "#e6faf3", "#0b7a5c"], ["Check", "#f1edfd", "#5a46b8"], ["Done", "#fff8e1", "#8a6206"]].map(([t, bg, fg], i) => (
+              <li key={t} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden="true" className="h-px w-4 bg-line-strong" />}
+                <span className="inline-flex items-center gap-1.5 rounded-pill py-1 pl-1 pr-3" style={{ background: bg, color: fg }}>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-pill bg-white text-[12px]">{i + 1}</span>{t}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
+            <button type="button" className="pz-btn pz-btn--primary w-full sm:w-auto" onClick={() => input.current?.click()}><Camera aria-hidden="true" size={20} />Take a photo</button>
+            <button type="button" className="pz-link text-label" onClick={() => library.current?.click()}>or choose one from your photos</button>
+          </div>
+          <p className="text-caption text-ink-muted">JPG, PNG or WebP, up to {MAX_MB} MB</p>
           <input ref={input} type="file" accept={TYPES.join(",")} capture="environment" className="sr-only" tabIndex={-1}
-            onChange={(e) => onFile(e.target.files?.[0])} aria-label="Upload prescription photo" />
+            onChange={(e) => onFile(e.target.files?.[0])} aria-label="Take a photo of your prescription" />
+          <input ref={library} type="file" accept={TYPES.join(",")} className="sr-only" tabIndex={-1}
+            onChange={(e) => onFile(e.target.files?.[0])} aria-label="Choose a prescription photo" />
         </div>
       )}
+      {(f || busy === "read") && <h2 id="scan-h" className="text-h2">Scan a prescription</h2>}
       {busy === "read" && <Loader label="Reading your prescription…" />}
       {saved && <Notice tone="success">{saved}</Notice>}
       {err && <Notice tone="danger">{err}</Notice>}
