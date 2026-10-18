@@ -59,21 +59,37 @@ export function TrialMatchCard({ match, trial: bare }: { match?: TrialMatch; tri
         </span>
       </div>
       <h3 className="text-[18px] font-semibold leading-6 tracking-[-0.01em]">{t.title}</h3>
+
+      {/* Key facts as small chips, so they don't read as one more sentence. */}
       {(place || isPaid(t)) && (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-muted">
-          {place && <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" size={13} />{place}</span>}
-          {isPaid(t) && <span className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2 py-0.5 font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={12} />Pays participants</span>}
-        </p>
+        <ul className="flex flex-wrap gap-1.5" aria-label="Key facts">
+          {place && <li className="inline-flex items-center gap-1 rounded-pill bg-surface px-2.5 py-1 text-caption text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]"><MapPin aria-hidden="true" size={13} />{place}</li>}
+          {isPaid(t) && <li className="inline-flex items-center gap-1 rounded-pill bg-[#fff4d6] px-2.5 py-1 text-caption font-medium text-[#8a6206]"><PoundSterling aria-hidden="true" size={12} />Pays participants</li>}
+        </ul>
       )}
-      {update && <UpdateDetails update={update} />}
-      {update && <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />}
-      {!update && match && match.why_surfaced.length > 0 && <p className="line-clamp-2 text-label font-normal text-ink">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>}
+
+      {/* What changed (trial updates) in its own box, with the fix right there. */}
+      {update && (
+        <div className="flex flex-col gap-3 rounded-[16px] bg-violet-soft p-3">
+          <UpdateDetails update={update} />
+          <FixIt nctId={t.nct_id} update={update} onUpdated={(u) => setUpdate(u ?? update)} />
+        </div>
+      )}
+
+      {/* Why it's on the list. */}
+      {!update && match && match.why_surfaced.length > 0 && (
+        <div className="rounded-[16px] bg-surface p-3 shadow-[inset_0_0_0_1px_var(--line)]">
+          <p className="mb-0.5 text-caption font-semibold text-ink-muted">Why you&apos;re seeing this</p>
+          <p className="text-label font-normal leading-6 text-ink">Shown because {match.why_surfaced.map((w) => w.replace(/\.$/, "").toLowerCase()).join(", ")}.</p>
+        </div>
+      )}
       {!match && t.brief_summary && <p className="line-clamp-3 text-label font-normal text-ink-muted">{t.brief_summary}</p>}
-      <div className="flex items-end justify-between gap-3 border-t border-line pt-3">
-        {match ? <p className="text-[12px] leading-4 text-ink-muted">{match.disclaimer}</p> : <span />}
-        <Link href={`/trials/${t.nct_id}`} className="group inline-flex shrink-0 items-center gap-1 text-label font-semibold text-violet-text">
-          Explain<span className="max-sm:hidden"> this trial</span><ArrowRight aria-hidden="true" size={16} className="transition-transform group-hover:translate-x-0.5" />
+
+      <div className="flex flex-col gap-2 pt-1">
+        <Link href={`/trials/${t.nct_id}`} className="pz-btn pz-btn--secondary pz-btn--sm w-full">
+          Explain this trial<ArrowRight aria-hidden="true" size={16} />
         </Link>
+        {match && <p className="text-center text-[12px] leading-4 text-ink-muted">{match.disclaimer}</p>}
       </div>
     </article>
   );

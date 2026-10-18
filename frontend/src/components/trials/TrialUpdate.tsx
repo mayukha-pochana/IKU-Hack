@@ -11,16 +11,18 @@ import { MatchBadge, Notice, Spinner, errorMessage } from "@/components/ui/pz";
 
 const MEDICATION_FIX = /^medication_/;
 
-/** "Updated today" chip, the one-sentence reason, and what it was before. */
+/** A clearly separated "what changed" box: Updated today, the one-sentence reason, and what it was before. */
 export function UpdateDetails({ update: u }: { update: TrialUpdate }) {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-body-lg">
-        {u.is_new && <span className="pz-badge pz-badge--neutral mr-2 align-middle"><BellRing aria-hidden="true" strokeWidth={2.5} />Updated today</span>}
-        {u.reason}
-      </p>
-      {u.provisional && <p className="flex items-start gap-2 text-caption text-ink-muted"><Clock aria-hidden="true" size={16} className="mt-0.5 shrink-0" />We&apos;ll double-check this shortly.</p>}
-      {u.previous_label && <p className="text-caption text-ink-muted">Was: {u.previous_label}</p>}
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {u.is_new
+          ? <span className="inline-flex items-center gap-1.5 text-caption font-semibold text-violet-text"><BellRing aria-hidden="true" size={14} strokeWidth={2.5} />Updated today</span>
+          : <span className="text-caption font-semibold text-ink-muted">What changed</span>}
+        {u.previous_label && <span className="text-caption text-ink-muted">Was: {u.previous_label}</span>}
+      </div>
+      <p className="text-label font-normal leading-6 text-ink">{u.reason}</p>
+      {u.provisional && <p className="flex items-start gap-2 text-caption text-ink-muted"><Clock aria-hidden="true" size={14} className="mt-0.5 shrink-0" />We&apos;ll double-check this shortly.</p>}
     </div>
   );
 }
@@ -67,7 +69,10 @@ export function FixIt({ nctId, update: u, onUpdated }: { nctId: string; update: 
       )}
       {done === "confirmed" && <p className="text-caption text-ink-muted">Thanks for confirming.</p>}
       {!open ? (
-        <button type="button" className="pz-link self-start text-left" aria-expanded={false} onClick={() => { setOpen(true); setDone(null); }}>Not right? Fix it</button>
+        <button type="button" aria-expanded={false} onClick={() => { setOpen(true); setDone(null); }}
+          className="inline-flex h-9 items-center gap-1.5 self-start rounded-pill border-[1.5px] border-line-strong bg-surface-raised px-3.5 text-label font-semibold text-violet-text transition-colors hover:border-violet">
+          <PencilLine aria-hidden="true" size={15} />Not right? Fix it
+        </button>
       ) : (
         <div className="flex flex-col gap-2 rounded-lg border border-line p-3" role="group" aria-label="Fix what this is based on">
           {u.fix_options.map((o) => (

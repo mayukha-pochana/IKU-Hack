@@ -1,11 +1,11 @@
 // OWNER: Member 2 - one confirmed medication as a compact row: route-coloured icon, name and instructions,
 // the schedule as a small chip, "Log" for when-needed medicines (scheduled ones are logged in the blister pack),
 // and "Stop taking" tucked in the ⋯ menu (future doses are removed; past history is kept).
-// Tap the card (or the ⓘ button) to flip it: the back explains, in plain words, how this medicine is taken, and links to its
+// Tap the card (or its "Tap to flip" hint) to flip it: the back explains, in plain words, how this medicine is taken, and links to its
 // NHS.UK page for what it's for. We don't write our own medical descriptions.
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Check, CircleOff, Clock, Droplet, ExternalLink, Info, MoreHorizontal, Pill, Plus, RotateCcw, Syringe, Wind } from "lucide-react";
+import { Check, CircleOff, Clock, Droplet, ExternalLink, MoreHorizontal, Pill, Plus, RotateCcw, RotateCw, Syringe, Wind } from "lucide-react";
 import { medications } from "@/lib/api";
 import type { Medication } from "@/types";
 import { Notice, Spinner, errorMessage } from "@/components/ui/pz";
@@ -99,10 +99,17 @@ export function MedicationCard({ med, onChanged }: { med: Medication; onChanged?
         )}
       </div>
 
+      {/* Fills the space on the front and says the card flips. */}
+      <div className="flex flex-1 items-center">
+        <button type="button" onClick={() => setFlipped(true)} aria-label={`Flip to learn more about ${med.name}`}
+          className="pz-flip-hint inline-flex items-center gap-1.5 rounded-pill bg-violet-soft px-3 py-1.5 text-caption font-semibold text-violet-text transition-colors hover:bg-violet hover:text-violet-on">
+          <RotateCw aria-hidden="true" size={14} />Tap to flip and learn more
+        </button>
+      </div>
       {s.stopped_at ? (
-        <p className="pz-badge pz-badge--neutral mt-auto self-start"><CircleOff aria-hidden="true" strokeWidth={2.5} />Stopped {dateTimeUK(s.stopped_at)}</p>
+        <p className="pz-badge pz-badge--neutral self-start"><CircleOff aria-hidden="true" strokeWidth={2.5} />Stopped {dateTimeUK(s.stopped_at)}</p>
       ) : (
-        <div className="mt-auto flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <span className="mr-auto inline-flex min-w-0 items-start gap-1.5 rounded-[12px] bg-surface px-3 py-1.5 text-caption text-ink-muted shadow-[inset_0_0_0_1px_var(--line)]">
             <Clock aria-hidden="true" size={13} className="mt-[3px] shrink-0" /><span>{describeSchedule(s)}</span>
           </span>
@@ -114,10 +121,6 @@ export function MedicationCard({ med, onChanged }: { med: Medication; onChanged?
               {busy === "log" ? <Spinner /> : <Plus aria-hidden="true" size={16} />}Log dose
             </button>
           ))}
-          <button type="button" onClick={() => setFlipped(true)} aria-label={`About ${med.name}`} title="About this medicine"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-violet-soft text-violet-text transition-colors hover:bg-violet hover:text-violet-on">
-            <Info aria-hidden="true" size={17} />
-          </button>
         </div>
       )}
       </div>
