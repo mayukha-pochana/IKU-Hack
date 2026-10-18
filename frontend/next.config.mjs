@@ -9,6 +9,13 @@ const nextConfig = staticExport
       images: { unoptimized: true },
       trailingSlash: true,
     }
-  : {};
+  : {
+      // Same-origin API: with NEXT_PUBLIC_API_URL="" the app calls /api/*, proxied here to the backend. This lets one
+      // public HTTPS link (the web demo gateway) serve the whole app, cookies included.
+      async rewrites() {
+        const target = process.env.API_PROXY_TARGET ?? "http://127.0.0.1:8010";
+        return [{ source: "/api/:path*", destination: `${target}/api/:path*` }];
+      },
+    };
 
 export default nextConfig;
