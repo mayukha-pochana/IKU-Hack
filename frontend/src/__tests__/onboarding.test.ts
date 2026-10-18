@@ -12,8 +12,8 @@ describe("profile draft", () => {
     expect(ageFromDob("1998-10-18", new Date(2026, 9, 17))).toBe(27);
   });
   it("maps to the PUT /api/profile body, with age from date of birth", () => {
-    const body = toPayload({ ...EMPTY, display_name: " Maya ", dob: "1998-03-14", conditions: ["Asthma"], location: "London", sex: "female", smoking: "never", pregnant: "no", travel: "40" }); // km in the form, miles in the API
-    expect(body).toMatchObject({ display_name: "Maya", conditions: ["Asthma"], location: "London", date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 });
+    const body = toPayload({ ...EMPTY, display_name: " Barbara ", dob: "1998-03-14", conditions: ["Asthma"], location: "London", sex: "female", smoking: "never", pregnant: "no", travel: "40" }); // km in the form, miles in the API
+    expect(body).toMatchObject({ display_name: "Barbara", conditions: ["Asthma"], location: "London", date_of_birth: "1998-03-14", sex_at_birth: "female", smoking_status: "never", pregnant_or_breastfeeding: "no", max_travel_miles: 25 });
     expect(typeof body.age).toBe("number");
     expect(toPayload({ ...EMPTY, display_name: "Sam", sex: "male", pregnant: "yes" }).pregnant_or_breastfeeding).toBeNull();
   });
