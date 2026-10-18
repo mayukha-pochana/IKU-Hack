@@ -61,7 +61,7 @@ export function TrialDetails({ trial: t, match }: { trial: Trial; match?: TrialM
           <TrialStatusBadge status={t.status} />
           <span className="text-caption text-ink-muted">{t.nct_id}</span>
         </div>
-        <h1 className="text-h1">{t.title}</h1>
+        <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] md:text-h1">{t.title}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="pz-btn pz-btn--secondary pz-btn--sm" onClick={bookmark} disabled={busy || saved} aria-busy={busy}>
             {busy ? <Spinner /> : saved ? <BookmarkCheck aria-hidden="true" size={16} /> : <Bookmark aria-hidden="true" size={16} />}{saved ? "Saved" : "Save trial"}

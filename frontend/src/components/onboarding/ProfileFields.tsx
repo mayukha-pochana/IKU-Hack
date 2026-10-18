@@ -81,7 +81,7 @@ export function ConditionFields({ d, set }: P) {
           <div className="relative flex-1">
             <input id="condition-search" className="pz-field__input w-full" role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
               aria-activedescendant={open ? `${listId}-${active}` : undefined} aria-invalid={err ? true : undefined} aria-describedby="condition-help"
-              value={q} placeholder="Start typing, for example psoriasis" autoComplete="off"
+              value={q} placeholder="For example, psoriasis" autoComplete="off"
               onChange={(e) => { setQ(e.target.value); setActive(0); setErr(null); }} onKeyDown={onKey} />
             {open && (
               <ul id={listId} role="listbox" className="pz-listbox" aria-label="Matching conditions">

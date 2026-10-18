@@ -74,7 +74,7 @@ export function LoginForm() {
       </div>
       {previewAvailable && (
         <div className="flex flex-col gap-2 rounded-md border border-dashed border-line-strong p-4">
-          <button type="button" className="pz-btn pz-btn--ghost justify-start px-0" onClick={() => { setPreview(true); router.push("/dashboard"); }}>
+          <button type="button" className="pz-btn pz-btn--ghost !justify-start !px-0 text-left" onClick={() => { setPreview(true); router.push("/dashboard"); }}>
             <Eye aria-hidden="true" size={20} /> Preview the app without the backend
           </button>
           <p className="text-caption text-ink-muted">Local development only. Uses sample data kept in this browser tab, so you can click through the screens.</p>

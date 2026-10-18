@@ -49,24 +49,28 @@ export default function TrialsPage() {
         {m && m.length > 0 && (
           <>
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="f-match">
-                <span id="f-match" className="min-w-[88px] text-label text-ink-muted">Match</span>
-                {ORDER.map((s) => (
-                  <Chip key={s} pressed={!hide.includes(s)} onClick={() => setHide(hide.includes(s) ? hide.filter((x) => x !== s) : [...hide, s])}>
-                    {MATCH_LABEL[s].label} ({count(s)})
-                  </Chip>
-                ))}
-              </div>
-              {(m ?? []).length > 0 && (
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="f-phase">
-                  <span id="f-phase" className="flex min-w-[88px] items-center text-label text-ink-muted">Phase <PhaseInfo /></span>
-                  {allPhases.map((p) => phaseCount(p) === 0 ? (
-                    <span key={p} className="pz-chip cursor-default border-line text-ink-muted opacity-60" aria-disabled="true">{p} (0)</span>
-                  ) : (
-                    <Chip key={p} pressed={!hidePhase.includes(p)} onClick={() => setHidePhase(hidePhase.includes(p) ? hidePhase.filter((x) => x !== p) : [...hidePhase, p])}>
-                      {p} ({phaseCount(p)})
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center" role="group" aria-labelledby="f-match">
+                <span id="f-match" className="text-label text-ink-muted sm:min-w-[88px]">Match</span>
+                <div className="pz-chip-row">
+                  {ORDER.map((s) => (
+                    <Chip key={s} pressed={!hide.includes(s)} onClick={() => setHide(hide.includes(s) ? hide.filter((x) => x !== s) : [...hide, s])}>
+                      {MATCH_LABEL[s].label} ({count(s)})
                     </Chip>
                   ))}
+                </div>
+              </div>
+              {(m ?? []).length > 0 && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center" role="group" aria-labelledby="f-phase">
+                  <span id="f-phase" className="flex items-center text-label text-ink-muted sm:min-w-[88px]">Phase <PhaseInfo /></span>
+                  <div className="pz-chip-row">
+                    {allPhases.map((p) => phaseCount(p) === 0 ? (
+                      <span key={p} className="pz-chip cursor-default border-line text-ink-muted opacity-60" aria-disabled="true">{p} (0)</span>
+                    ) : (
+                      <Chip key={p} pressed={!hidePhase.includes(p)} onClick={() => setHidePhase(hidePhase.includes(p) ? hidePhase.filter((x) => x !== p) : [...hidePhase, p])}>
+                        {p} ({phaseCount(p)})
+                      </Chip>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

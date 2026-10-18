@@ -76,10 +76,10 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
     <section className="pz-card gap-6" aria-labelledby="diary-h">
       <fieldset className="flex flex-col gap-3">
         <legend id="diary-h" className="pz-card__title mb-3">How are you feeling today?</legend>
-        <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-labelledby="diary-h">
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2" role="radiogroup" aria-labelledby="diary-h">
           {MOODS.map((m) => (
             <button key={m} type="button" role="radio" aria-checked={mood === m} onClick={() => setMood(mood === m ? null : m)}
-              className={cn("flex min-h-tap flex-col items-center gap-1.5 rounded-md border-[1.5px] px-1 py-3 text-label transition-colors",
+              className={cn("flex min-h-tap min-w-0 flex-col items-center gap-1.5 rounded-md border-[1.5px] px-0.5 py-3 text-[13px] font-medium leading-5 transition-colors sm:text-label",
                 mood === m ? "border-violet bg-violet text-violet-on hover:bg-violet" : "border-line-strong bg-surface-raised text-ink hover:bg-violet-soft")}>
               <MoodIcon mood={m} size={28} />{m}
             </button>
@@ -138,7 +138,7 @@ export function PresageCameraCheckIn({ onSaved }: { onSaved: () => void }) {
 
       {err && <Notice tone="danger">{err}</Notice>}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="pz-btn pz-btn--primary" disabled={saving} aria-busy={saving} onClick={save}>{saving ? <><Spinner /> Saving…</> : "Save to my diary"}</button>
+        <button type="button" className="pz-btn pz-btn--primary w-full sm:w-auto" disabled={saving} aria-busy={saving} onClick={save}>{saving ? <><Spinner /> Saving…</> : "Save to my diary"}</button>
       </div>
     </section>
   );

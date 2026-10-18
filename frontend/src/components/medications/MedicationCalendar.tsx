@@ -74,19 +74,22 @@ function Pack({ name, doses, colour, amount, route, saving, onToggle }: { name: 
   }
   const { days, rows, cell } = buildWeek(doses);
   const taken = doses.filter((d) => d.status === "TAKEN").length;
-  const rowsStyle = { gridTemplateRows: `repeat(${rows.length}, 40px)` };
+  const rowsStyle = { gridTemplateRows: `repeat(${rows.length}, var(--pz-cell))` }; // cell size shrinks on phones (globals.css)
   return (
     <div className="flex flex-col items-center gap-3" style={colourVars(colour)}>
       <div className="flex flex-col items-center gap-1">
         <p className="text-h3">{name}</p>
-        <span className="pz-badge pz-badge--neutral">{ROUTE_LABEL[route]}</span>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="pz-badge pz-badge--neutral">{ROUTE_LABEL[route]}</span>
+          {amount && <span className="text-label font-normal text-ink-muted">{amount.text} each time</span>}
+        </div>
       </div>
       <div className="pz-blister max-w-full">
         <div className="pz-blister__days" aria-hidden="true">{days.map((d) => <span key={d.toISOString()} className="pz-blister__head">{weekdayShort(d).slice(0, 2)}</span>)}</div>
         <div className="pz-blister__labels" style={rowsStyle} aria-hidden="true">
           {rows.map((r) => (
             <span key={r.key} className="pz-blister__row flex-col !items-end !justify-center leading-tight">
-              {r.time}{amount && <span className="text-caption font-normal">{amount.text}</span>}
+              {r.time}
             </span>
           ))}
         </div>

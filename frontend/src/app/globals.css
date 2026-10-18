@@ -204,8 +204,22 @@ body { font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif; colo
 .pz-progress > span { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--mint); }
 .pz-blister__cell[aria-disabled="true"] { cursor: default; }
 .pz-blister__cell--empty { background: transparent; box-shadow: none; cursor: default; }
+/* Blister pack sizes come from --pz-cell / --pz-gap so the whole week fits on a phone. */
+.pz-blister { --pz-cell: 40px; --pz-gap: 10px; --pz-row-gap: 26px; --pz-pad: 16px; }
+.pz-blister__days, .pz-blister__sheet { grid-template-columns: repeat(7, var(--pz-cell)); column-gap: var(--pz-gap); }
+.pz-blister__days { padding: 0 var(--pz-pad); }
+.pz-blister__sheet { padding: calc(var(--pz-pad) - 2px) var(--pz-pad); row-gap: var(--pz-row-gap); }
+.pz-blister__labels { row-gap: var(--pz-row-gap); padding: calc(var(--pz-pad) - 2px) 0; }
+.pz-blister__cell { width: var(--pz-cell); height: var(--pz-cell); }
+.pz-blister__cell .pz-tab { width: calc(var(--pz-cell) - 2px); height: calc(var(--pz-cell) - 2px); }
+@media (max-width: 480px) {
+  .pz-blister { --pz-cell: 30px; --pz-gap: 5px; --pz-row-gap: 18px; --pz-pad: 10px; column-gap: var(--space-2); }
+  .pz-blister__sheet { border-radius: 18px; }
+  .pz-blister__tick { width: 16px; height: 16px; }
+}
+/* Cards use the design system's mobile padding (space-4) on phones. */
 @media (max-width: 640px) {
-  .pz-blister { overflow-x: auto; max-width: 100%; }
+  .pz-card { padding: var(--space-4); }
 }
 /* Read-only pill box (adherence summary): taken days get a green lid, matching the red missed lid. */
 .pz-pillbox__day--taken .pz-pillbox__lid { background: var(--success-soft); color: var(--success); box-shadow: inset 0 0 0 2.5px var(--success); }
@@ -300,3 +314,11 @@ select.pz-field__input {
   padding-right: 44px;
 }
 select.pz-field__input:hover { border-color: var(--violet); }
+/* Filter chips: one swipeable row on phones, wrapping on wider screens. */
+.pz-chip-row { display: flex; gap: var(--space-2); }
+.pz-chip-row > * { flex: none; white-space: nowrap; }
+@media (max-width: 639px) {
+  .pz-chip-row { overflow-x: auto; margin-inline: calc(var(--space-4) * -1); padding: 2px var(--space-4) 4px; scrollbar-width: none; }
+  .pz-chip-row::-webkit-scrollbar { display: none; }
+}
+@media (min-width: 640px) { .pz-chip-row { flex-wrap: wrap; } }

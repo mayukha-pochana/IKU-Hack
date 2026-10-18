@@ -94,7 +94,7 @@ export function AdherenceWeek({ days }: { days: AdherenceDay[] }) {
           );
         })}
       </ol>
-      <ul className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-caption text-ink-muted" aria-hidden="true">
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-caption text-ink-muted sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-2" aria-hidden="true">
         {LEGEND.map((l) => (
           <li key={l.label} className="flex items-center gap-1 whitespace-nowrap"><span className={cn("h-[14px] w-[11px] shrink-0 rounded-[3px]", l.swatch)} />{l.label}</li>
         ))}

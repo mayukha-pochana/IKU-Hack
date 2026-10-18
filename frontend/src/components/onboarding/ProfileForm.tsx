@@ -44,7 +44,7 @@ export function ProfileForm({ redirectTo }: { redirectTo?: string }) {
       <section className="pz-card"><h2 className="pz-card__title">More about your health</h2><HealthFields d={d} set={setD} /></section>
       <section className="pz-card"><h2 className="pz-card__title">Location and travel</h2><LocationFields d={d} set={setD} /></section>
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
-      <button className="pz-btn pz-btn--primary self-start" disabled={saving} aria-busy={saving}>{saving ? <><Spinner /> Saving…</> : "Save changes"}</button>
+      <button className="pz-btn pz-btn--primary w-full sm:w-auto sm:self-start" disabled={saving} aria-busy={saving}>{saving ? <><Spinner /> Saving…</> : "Save changes"}</button>
     </form>
   );
 }

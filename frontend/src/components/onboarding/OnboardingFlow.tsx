@@ -62,7 +62,7 @@ export function OnboardingFlow() {
       {step === 3 && <LocationFields d={d} set={setD} />}
       {err && <Notice tone="danger">{err}</Notice>}
       <div className="flex flex-wrap items-center gap-3">
-        <button className="pz-btn pz-btn--primary" disabled={saving} aria-busy={saving}>
+        <button className="pz-btn pz-btn--primary w-full sm:w-auto" disabled={saving} aria-busy={saving}>
           {saving ? <><Spinner /> Saving…</> : step < STEPS.length ? <>Continue <ArrowRight aria-hidden="true" size={20} /></> : "Save and see my dashboard"}
         </button>
         {step > 1 && <button type="button" className="pz-btn pz-btn--ghost" onClick={() => setStep(step - 1)}><ArrowLeft aria-hidden="true" size={20} /> Back</button>}
